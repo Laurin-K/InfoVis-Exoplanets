@@ -5,26 +5,78 @@
 
 <!-- Create a div where the graph will take place -->
 <div id="my_dataviz"></div>
+<div id="controls" style="height:100px; width:150px; overflow-y:scroll;"></div>
 
 <script>
 
-    const dimensions = ["sy_snum", "sy_pnum", "disc_year", "pl_orbper", "pl_orbsmax"];
 
+    const allDimensions = [
+        "sy_snum", "sy_pnum", "disc_year",
+        "pl_orbper", "pl_orbsmax",
+        "pl_rade", "pl_bmassj",
+        "st_teff", "sy_dist"
+    ];
+
+    function createCheckboxes() {
+        const container = d3.select("#controls");
+
+        //create checkboxes for every entry in allDimensions
+        //call updateDimensions when select has changed
+        allDimensions.forEach(dim => {
+
+            const label = container.append("label")
+                .style("display", "block");
+
+            label.append("input")
+                .attr("type", "checkbox")
+                .attr("value", dim)
+                .property("checked", activeDimensions.includes(dim))
+                .on("change", updateDimensions);
+
+            label.append("span")
+                .text(" " + dim);
+        });
+    }
+    //updates activeDimensions when selection has changed
+    //call draw
+    function updateDimensions() {
+
+        activeDimensions = [];
+
+        d3.selectAll("#controls input:checked")
+            .each(function() {
+                activeDimensions.push(this.value);
+            });
+
+        draw(activeDimensions);
+    }
+
+    let activeDimensions = ["sy_snum", "sy_pnum", "disc_year", "pl_orbper", "pl_orbsmax"];
+
+    let fullData = [];
     d3.csv("../data/nasa_export_small.csv", d => {
 
         // convert string into int
-        dimensions.forEach(dim => {
+        activeDimensions.forEach(dim => {
             d[dim] = d[dim] === "" ? null : +d[dim];
         });
 
         return d;
 
-    }).then(data => draw(data));
+    }).then(data => {
 
-    function draw(data)
+        fullData = data;
+
+        createCheckboxes();
+        draw(activeDimensions);
+
+    });
+
+    function draw(dimensions)
     {
+        d3.select("#my_dataviz").selectAll("*").remove();
         // keep only valid datasets
-        data = data.filter(d =>
+        let data = fullData.filter(d =>
             dimensions.every(dim => d[dim] != null && !isNaN(d[dim]))
         );
 
