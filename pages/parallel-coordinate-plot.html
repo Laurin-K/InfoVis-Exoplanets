@@ -11,7 +11,7 @@
     const dimensions = ["sy_snum", "sy_pnum", "disc_year", "pl_orbper", "pl_orbsmax"];
     const logDimensions = ["pl_orbper", "pl_orbsmax"];
 
-    d3.csv("Data/nasa_export_small.csv", d => {
+    d3.csv("../data/nasa_export_small.csv", d => {
 
         // convert string into int
         dimensions.forEach(dim => {
@@ -21,12 +21,6 @@
         return d;
 
     }).then(data => draw(data));
-
-    function setAxisScaling()
-    {
-
-
-    }
 
     function draw(data)
     {
@@ -56,13 +50,6 @@
 
         // Y-Axis data
         const y = {};
-
-        /*dimensions.forEach(dim => {
-            y[dim] = d3.scaleLinear()
-                .domain(d3.extent(data, d => d[dim]))
-                .nice() //
-                .range([height, 0]);
-        });*/
 
         dimensions.forEach(dim => {
 
@@ -132,7 +119,6 @@
             .attr("class", "line")
             .attr("d", path)
             .style("fill", "none")
-            //.style("stroke", "steelblue")
             .style("stroke", function(d){ return( color(d.sy_snum))})
             .style("opacity", 0.8);
     }
