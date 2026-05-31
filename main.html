@@ -11,7 +11,7 @@
     const dimensions = ["sy_snum", "sy_pnum", "disc_year", "pl_orbper", "pl_orbsmax"];
     const logDimensions = ["pl_orbper", "pl_orbsmax"];
 
-    d3.csv("Data/nasa_export_filtered.csv", d => {
+    d3.csv("Data/nasa_export_small.csv", d => {
 
         // convert string into int
         dimensions.forEach(dim => {
@@ -60,7 +60,7 @@
         /*dimensions.forEach(dim => {
             y[dim] = d3.scaleLinear()
                 .domain(d3.extent(data, d => d[dim]))
-                .nice() // 👈 macht Achsen "schöner"
+                .nice() //
                 .range([height, 0]);
         });*/
 
@@ -68,7 +68,7 @@
 
             const values = data
                 .map(d => d[dim])
-                .filter(v => v != null && v > 0); // wichtig für log
+                .filter(v => v != null && v > 0);
 
             const min = d3.min(values);
             const max = d3.max(values);
