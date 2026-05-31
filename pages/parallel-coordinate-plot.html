@@ -9,7 +9,6 @@
 <script>
 
     const dimensions = ["sy_snum", "sy_pnum", "disc_year", "pl_orbper", "pl_orbsmax"];
-    const logDimensions = ["pl_orbper", "pl_orbsmax"];
 
     d3.csv("../data/nasa_export_small.csv", d => {
 
@@ -28,8 +27,6 @@
         data = data.filter(d =>
             dimensions.every(dim => d[dim] != null && !isNaN(d[dim]))
         );
-
-        //console.log("Daten geladen:", data);
 
         // SVG Setup
         const margin = { top: 30, right: 50, bottom: 10, left: 50 };
@@ -55,12 +52,14 @@
 
             const values = data
                 .map(d => d[dim])
-                .filter(v => v != null && v > 0);
+                .filter(v => v != null && !isNaN(v));
 
             const min = d3.min(values);
             const max = d3.max(values);
 
-            if (logDimensions.includes(dim)) {
+            const ratio = max / min;
+
+            if (min > 0 && ratio > 100) {
 
                 y[dim] = d3.scaleLog()
                     .domain([min, max])
