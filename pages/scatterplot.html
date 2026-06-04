@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exoplanet Scatterplot</title>
+    <link rel="stylesheet" href="../styling/scatterplot.css">
+    <script src="https://d3js.org/d3.v7.js" defer></script>
+    <script src="../scripts/scatterplot.js" defer></script>
+</head>
+<body>
+    <div class="scatterplot-page">
+        <div class="scatterplot-header">
+            <div class="headline-copy">
+                <p class="eyebrow">NASA Exoplanet Archive</p>
+                <h1>Scatterplot Explorer</h1>
+                <p class="subtitle">
+                    Compare two numeric fields from the export and inspect how planets cluster across size, orbit,
+                    distance, and discovery history.
+                </p>
+            </div>
+            <div class="header-metric" id="chart-summary">
+                <strong>Loading</strong>
+                <span>NASA export data</span>
+            </div>
+        </div>
+
+        <div class="scatterplot-layout">
+            <section class="panel plot-panel">
+                <div id="my_dataviz"></div>
+                <div id="plot-note" class="plot-note">Loading NASA export data and glossary...</div>
+            </section>
+
+            <aside class="panel control-panel">
+                <div id="controls"></div>
+
+                <div class="legend">
+                    <div class="legend-heading">Point color</div>
+                    <div class="legend-bar">
+                        <div id="year-gradient"></div>
+                    </div>
+                    <div class="legend-labels">
+                        <span id="year-min">-</span>
+                        <span id="year-max">-</span>
+                    </div>
+                    <div class="legend-caption">Discovery year</div>
+                </div>
+            </aside>
+        </div>
+
+        <div class="column-explanation">
+            <table id="dataTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+</body>
+</html>
