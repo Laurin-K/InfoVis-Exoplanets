@@ -1,0 +1,24 @@
+column;name;description
+pl_name;Planet Name;Planet name most commonly used in the literature
+hostname;Host Name;Stellar name most commonly used in the literature
+default_flag;Default Parameter Set;Boolean flag indicating whether given set of planet parameters has been selected as default (1=yes, 0=no)
+sy_snum;Number of Stars;Number of gravitationally bound stars in the planetary system
+sy_pnum;Number of Planets;Number of confirmed planets in the planetary system
+sy_mnum;Number of Moons;Number of moons in the planetary system
+cb_flag;Circumbinary Flag;Flag indicating whether the planet orbits a binary system (1=yes, 0=no)
+disc_year;Discovery Year;Year the planet was discovered
+pl_controv_flag;Controversial Flag;Flag indicating whether the confirmation status of a planet has been questioned in the published literature (1=yes, 0=no)
+pl_orbper;Orbital Period [days];Time the planet takes to make a complete orbit around the host star or system
+pl_orbsmax;Orbit Semi-Major Axis [au];The longest radius of an elliptic orbit, or, for exoplanets detected via gravitational microlensing or direct imaging, the projected separation in the plane of the sky
+pl_rade;Planet Radius [Earth Radius];Length of a line segment from the center of the planet to its surface, measured in units of radius of the Earth
+pl_radj;Planet Radius [Jupiter Radius];Length of a line segment from the center of the planet to its surface, measured in units of radius of Jupiter
+pl_bmasse;Planet Mass or Mass*sin(i) [Earth Mass];Best planet mass estimate available, in order of preference: Mass, M*sin(i)/sin(i), or M*sin(i), depending on availability, and measured in Earth masses
+pl_bmassj;Planet Mass or Mass*sin(i) [Jupiter Mass];Best planet mass estimate available, in order of preference: Mass, M*sin(i)/sin(i), or M*sin(i), depending on availability, and measured in Jupiter masses
+pl_bmassprov;Planet Mass or Mass*sin(i) Provenance;Provenance of the measurement of the best mass. Options are: Mass, M*sin(i)/sin(i), and M*sini
+pl_insol;Insolation Flux [Earth Flux];Insolation flux is another way to give the equilibrium temperature. It's given in units relative to those measured for the Earth from the Sun.
+pl_eqt;Equilibrium Temperature [K];The equilibrium temperature of the planet as modeled by a black body heated only by its host star, or for directly imaged planets, the effective temperature of the planet required to match the measured luminosity if the planet were a black body
+st_teff;Stellar Effective Temperature [K];Temperature of the star as modeled by a black body emitting the same total amount of electromagnetic radiation
+st_rad;Stellar Radius [Solar Radius];Length of a line segment from the center of the star to its surface, measured in units of radius of the Sun
+st_mass;Stellar Mass [Solar mass];Amount of matter contained in the star, measured in units of masses of the Sun
+st_logg;Stellar Surface Gravity [log10(cm/s**2)];Gravitational acceleration experienced at the stellar surface
+sy_dist;Distance [pc];Distance to the planetary system in units of parsecs
