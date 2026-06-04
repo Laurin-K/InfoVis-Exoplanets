@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exoplanet Spiderplot Gallery</title>
+    <link rel="stylesheet" href="../styling/spiderplot.css">
+    <script src="../data/spiderplot-data.js" defer></script>
+    <script src="../scripts/spiderplot.js" defer></script>
+</head>
+<body data-spider-view="gallery">
+    <div class="spider-page">
+        <header class="spider-header">
+            <div>
+                <a class="back-link" href="spiderplot.html">Back to compare</a>
+                <p class="eyebrow">NASA Exoplanet Archive</p>
+                <h1>Individual Spiderplots</h1>
+                <p class="subtitle">
+                    Each exoplanet is shown in its own small spiderplot so the shapes can be scanned without overlay clutter.
+                </p>
+            </div>
+            <a class="gallery-link" href="../index.html">Overview</a>
+        </header>
+
+        <main class="panel gallery-panel">
+            <div class="gallery-toolbar">
+                <div>
+                    <label class="control-label" for="gallery-search">Filter planets</label>
+                    <input id="gallery-search" type="search" placeholder="Search by planet or host...">
+                </div>
+                <p id="gallery-count" class="note"></p>
+            </div>
+            <div id="spider-gallery" class="spider-gallery"></div>
+        </main>
+    </div>
+</body>
+</html>

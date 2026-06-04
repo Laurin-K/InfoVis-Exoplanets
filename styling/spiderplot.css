@@ -1,0 +1,377 @@
+:root {
+    --bg: #071018;
+    --panel: rgba(14, 25, 36, 0.86);
+    --panel-strong: rgba(8, 15, 23, 0.96);
+    --border: rgba(178, 207, 222, 0.18);
+    --text: #eef7f8;
+    --muted: #9fb4bc;
+    --accent: #8fe3c7;
+    --accent-2: #f2c66d;
+    --danger: #ff8f8f;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    --radius: 24px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: "Bahnschrift", "Segoe UI", sans-serif;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(143, 227, 199, 0.17), transparent 28%),
+        radial-gradient(circle at 84% 8%, rgba(242, 198, 109, 0.15), transparent 25%),
+        linear-gradient(160deg, #031018 0%, #09212d 48%, #081018 100%);
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+    background-size: 34px 34px;
+    opacity: 0.16;
+    pointer-events: none;
+}
+
+.spider-page {
+    position: relative;
+    width: min(1240px, calc(100vw - 32px));
+    margin: 0 auto;
+    padding: 28px 0 42px;
+}
+
+.spider-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 12px 6px 24px;
+}
+
+.back-link,
+.gallery-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.gallery-link {
+    padding: 12px 16px;
+    border: 1px solid rgba(143, 227, 199, 0.32);
+    border-radius: 999px;
+    background: rgba(143, 227, 199, 0.08);
+}
+
+.eyebrow {
+    margin: 18px 0 10px;
+    color: var(--accent-2);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.76rem;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4.5vw, 4rem);
+    line-height: 0.95;
+}
+
+.subtitle {
+    max-width: 76ch;
+    margin: 14px 0 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+}
+
+.compare-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.control-panel,
+.chart-panel,
+.metric-panel,
+.gallery-panel {
+    padding: 18px;
+}
+
+.control-panel {
+    position: sticky;
+    top: 18px;
+}
+
+.control-label {
+    display: block;
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+input,
+select,
+button {
+    width: 100%;
+    border: 1px solid rgba(178, 207, 222, 0.24);
+    border-radius: 14px;
+    background: rgba(4, 10, 16, 0.88);
+    color: var(--text);
+    padding: 12px 14px;
+    font: inherit;
+}
+
+input,
+select {
+    margin-bottom: 14px;
+}
+
+input:focus,
+select:focus,
+button:focus {
+    outline: 2px solid rgba(143, 227, 199, 0.42);
+    outline-offset: 2px;
+}
+
+.primary-button {
+    cursor: pointer;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: linear-gradient(135deg, rgba(143, 227, 199, 0.22), rgba(242, 198, 109, 0.18));
+}
+
+.primary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.46;
+}
+
+.note {
+    margin: 12px 0;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.note.error {
+    color: var(--danger);
+}
+
+.selected-planets {
+    display: grid;
+    gap: 10px;
+}
+
+.planet-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(178, 207, 222, 0.16);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.chip-label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+
+.color-dot {
+    width: 11px;
+    height: 11px;
+    flex: 0 0 11px;
+    border-radius: 50%;
+}
+
+.planet-chip span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.planet-chip button {
+    width: auto;
+    padding: 5px 9px;
+    border-radius: 10px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#spider-chart svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.radar-grid {
+    fill: none;
+    stroke: rgba(178, 207, 222, 0.18);
+}
+
+.radar-axis {
+    stroke: rgba(178, 207, 222, 0.2);
+}
+
+.radar-label {
+    fill: var(--text);
+    font-size: 12px;
+}
+
+.radar-subtitle {
+    fill: var(--muted);
+    font-size: 10px;
+}
+
+.radar-area {
+    fill-opacity: 0.16;
+    stroke-width: 2.6;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+}
+
+.metric-panel {
+    margin-top: 18px;
+}
+
+.metric-panel h2 {
+    margin: 0 0 14px;
+    font-size: 1.1rem;
+}
+
+.metric-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.metric-card {
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.metric-card strong {
+    display: block;
+}
+
+.metric-card span {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.gallery-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.gallery-toolbar > div {
+    width: min(420px, 100%);
+}
+
+.spider-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+}
+
+.mini-card {
+    padding: 13px;
+    border: 1px solid rgba(178, 207, 222, 0.14);
+    border-radius: 18px;
+    background: rgba(5, 12, 18, 0.66);
+}
+
+.mini-card h2 {
+    margin: 0 0 2px;
+    overflow: hidden;
+    color: var(--text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1rem;
+}
+
+.mini-card p {
+    margin: 0 0 8px;
+    overflow: hidden;
+    color: var(--muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.86rem;
+}
+
+.mini-card svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.empty-state {
+    padding: 28px;
+    color: var(--muted);
+    text-align: center;
+}
+
+@media (max-width: 880px) {
+    .spider-header,
+    .gallery-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .compare-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .control-panel {
+        position: static;
+    }
+}
+
+@media (max-width: 560px) {
+    .spider-page {
+        width: min(100vw - 20px, 1240px);
+        padding-top: 18px;
+    }
+
+    .control-panel,
+    .chart-panel,
+    .metric-panel,
+    .gallery-panel {
+        padding: 14px;
+    }
+
+    .radar-label {
+        font-size: 10px;
+    }
+}

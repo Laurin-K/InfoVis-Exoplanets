@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exoplanet Spiderplot</title>
+    <link rel="stylesheet" href="../styling/spiderplot.css">
+    <script src="../data/spiderplot-data.js" defer></script>
+    <script src="../scripts/spiderplot.js" defer></script>
+</head>
+<body data-spider-view="compare">
+    <div class="spider-page">
+        <header class="spider-header">
+            <div>
+                <a class="back-link" href="../index.html">Back to overview</a>
+                <p class="eyebrow">NASA Exoplanet Archive</p>
+                <h1>Spiderplot Compare</h1>
+                <p class="subtitle">
+                    Select up to four exoplanets and compare their normalized orbital, planetary, and stellar values
+                    in one shared spiderplot.
+                </p>
+            </div>
+            <a class="gallery-link" href="spiderplot-gallery.html">Open individual spiderplots</a>
+        </header>
+
+        <main class="compare-layout">
+            <aside class="panel control-panel">
+                <label class="control-label" for="planet-search">Search planet</label>
+                <input id="planet-search" type="search" placeholder="Type a planet name...">
+
+                <label class="control-label" for="planet-select">Planet</label>
+                <select id="planet-select"></select>
+
+                <button id="add-planet" class="primary-button" type="button">Add planet</button>
+                <p id="selection-note" class="note">Choose 1 to 4 planets.</p>
+                <div id="selected-planets" class="selected-planets"></div>
+            </aside>
+
+            <section class="panel chart-panel">
+                <div id="spider-chart"></div>
+                <div id="spider-legend" class="legend"></div>
+            </section>
+        </main>
+
+        <section class="panel metric-panel">
+            <h2>Compared Metrics</h2>
+            <div id="metric-list" class="metric-list"></div>
+        </section>
+    </div>
+</body>
+</html>
