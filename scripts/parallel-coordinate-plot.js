@@ -149,6 +149,12 @@ function draw(dimensions)
 
     });
 
+    const brushes = {};
+
+    dimensions.forEach(dim => {
+        brushes[dim] = null;
+    });
+
     // create Y-Axis
     const axis = d3.axisLeft();
 
@@ -171,8 +177,61 @@ function draw(dimensions)
         .style("text-anchor", "middle")
         .style("fill", "black")
         .text(d => d);
+
+    g.append("g")
+        .attr("class", "brush")
+        .each(function(dim) {
+
+            d3.select(this).call(
+                d3.brushY()
+                    .extent([[-10, 0], [10, height]])
+                    .on("start brush end", function(event) {
+                        brushed(event, dim);
+                    })
+            );
+
+        });
     const line = d3.line();
 
+    function brushed(event, dim) {
+
+        if (!event.selection) {
+            brushes[dim] = null;
+            updateLines();
+            return;
+        }
+
+        const [y0, y1] = event.selection;
+
+        let min = y[dim].invert(y1);
+        let max = y[dim].invert(y0);
+
+        if (min > max) [min, max] = [max, min];
+
+        brushes[dim] = [min, max];
+
+        updateLines();
+        console.log(dim, brushes[dim]);
+    }
+
+    function updateLines() {
+
+        svg.selectAll(".line")
+            .style("display", function(d) {
+
+                return dimensions.every(dim => {
+
+                    if (!brushes[dim]) return true;
+
+                    const value = d[dim];
+                    const [min, max] = brushes[dim];
+
+                    return value >= min && value <= max;
+
+                }) ? null : "none";
+
+            });
+    }
     function path(d) {
         return line(dimensions.map(dim => [
             x(dim),
