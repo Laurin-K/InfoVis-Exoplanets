@@ -198,6 +198,12 @@ function draw(dimensions)
 
     });
 
+    const brushes = {};
+
+    dimensions.forEach(dim => {
+        brushes[dim] = null;
+    });
+
     // create Y-Axis
     const axis = d3.axisLeft();
 
@@ -224,7 +230,7 @@ function draw(dimensions)
         .on("mouseover", function(event, d) {
             d3.select(this)
                 .style("font-weight", "bold");
-            
+
             const expl = columnExplanations[d];
             let content = `<strong>${d}</strong>`;
             if (expl) {
@@ -243,8 +249,61 @@ function draw(dimensions)
                 .style("font-weight", "normal");
             getTooltip().style("visibility", "hidden");
         });
+
+    g.append("g")
+        .attr("class", "brush")
+        .each(function(dim) {
+
+            d3.select(this).call(
+                d3.brushY()
+                    .extent([[-10, 0], [10, height]])
+                    .on("start brush end", function(event) {
+                        brushed(event, dim);
+                    })
+            );
+
+        });
     const line = d3.line();
 
+    function brushed(event, dim) {
+
+        if (!event.selection) {
+            brushes[dim] = null;
+            updateLines();
+            return;
+        }
+
+        const [y0, y1] = event.selection;
+
+        let min = y[dim].invert(y1);
+        let max = y[dim].invert(y0);
+
+        if (min > max) [min, max] = [max, min];
+
+        brushes[dim] = [min, max];
+
+        updateLines();
+        console.log(dim, brushes[dim]);
+    }
+
+    function updateLines() {
+
+        svg.selectAll(".line")
+            .style("display", function(d) {
+
+                return dimensions.every(dim => {
+
+                    if (!brushes[dim]) return true;
+
+                    const value = d[dim];
+                    const [min, max] = brushes[dim];
+
+                    return value >= min && value <= max;
+
+                }) ? null : "none";
+
+            });
+    }
     function path(d) {
         return line(dimensions.map(dim => [
             x(dim),
@@ -316,33 +375,33 @@ let selectedPlanet = null;
 
 function selectDataline(d) {
     selectedPlanet = d;
-    
+
     d3.selectAll(".line")
         .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
         .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
-        
+
     updateInfocard(d);
 }
 
 function deselectAllDatalines() {
     selectedPlanet = null;
-    
+
     d3.selectAll(".line")
         .classed("selected", false)
         .classed("dimmed", false);
-        
+
     clearInfocard();
 }
 
 function updateInfocard(d) {
     const card = document.getElementById("planet-infocard");
     const contentDiv = document.getElementById("infocard-content");
-    
+
     if (!card || !contentDiv) return;
-    
+
     let html = `<h2>${d.pl_name || "Unknown Planet"}</h2>`;
     html += `<table>`;
-    
+
     const fieldsToShow = [
         { key: "hostname", label: "Host Star" },
         { key: "disc_year", label: "Discovery Year" },
@@ -357,7 +416,7 @@ function updateInfocard(d) {
         { key: "st_teff", label: "Stellar Temp", unit: "K" },
         { key: "sy_dist", label: "Distance", unit: "pc" }
     ];
-    
+
     fieldsToShow.forEach(field => {
         const val = d[field.key];
         if (val !== undefined && val !== null && val !== "") {
@@ -371,9 +430,9 @@ function updateInfocard(d) {
             `;
         }
     });
-    
+
     html += `</table>`;
-    
+
     contentDiv.innerHTML = html;
     card.style.display = "block";
 }
