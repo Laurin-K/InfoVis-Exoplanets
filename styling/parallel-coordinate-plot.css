@@ -54,3 +54,25 @@ input:checked + .slider {
 input:checked + .slider:before {
     transform: translateX(24px);
 }
+
+/* Basic PCP line interaction styling */
+.line {
+    cursor: pointer;
+}
+
+.line.selected {
+    stroke-width: 4px !important;
+}
+
+.line.dimmed {
+    opacity: 0.15 !important;
+    stroke: #888 !important;
+}
+
+/* Basic Planet Infocard styling */
+.infocard {
+    display: none;
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+}

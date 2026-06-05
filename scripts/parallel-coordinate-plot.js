@@ -152,6 +152,16 @@ function draw(dimensions)
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    // Add transparent background for clicking to deselect
+    svg.append("rect")
+        .attr("width", width)
+        .attr("height", height)
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .on("click", function() {
+            deselectAllDatalines();
+        });
+
     // Y-Axis positions
     const x = d3.scalePoint()
         .domain(dimensions)
@@ -246,7 +256,7 @@ function draw(dimensions)
         .domain(["1", "2", "3", "4", "5"])
         .range([ "#440154ff", "#21908dff", "#fde725ff", "#123456ff", "#abcdefff"])
 
-    svg.selectAll(".line")
+    const paths = svg.selectAll(".line")
         .data(data)
         .enter()
         .append("path")
@@ -254,7 +264,23 @@ function draw(dimensions)
         .attr("d", path)
         .style("fill", "none")
         .style("stroke", function(d){ return( color(d.sy_snum))})
-        .style("opacity", 0.8);
+        .style("opacity", 0.8)
+        .on("click", function(event, d) {
+            event.stopPropagation();
+            selectDataline(d);
+        });
+
+    // If a planet was already selected, re-apply the visual classes to the new paths
+    if (selectedPlanet) {
+        const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
+        if (exists) {
+            paths.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
+                 .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
+        } else {
+            clearInfocard();
+            selectedPlanet = null;
+        }
+    }
 }
 
 function createTableFromCSV(csv) {
@@ -284,4 +310,77 @@ function createTableFromCSV(csv) {
 
         tableBody.appendChild(tr);
     });
+}
+
+let selectedPlanet = null;
+
+function selectDataline(d) {
+    selectedPlanet = d;
+    
+    d3.selectAll(".line")
+        .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
+        .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
+        
+    updateInfocard(d);
+}
+
+function deselectAllDatalines() {
+    selectedPlanet = null;
+    
+    d3.selectAll(".line")
+        .classed("selected", false)
+        .classed("dimmed", false);
+        
+    clearInfocard();
+}
+
+function updateInfocard(d) {
+    const card = document.getElementById("planet-infocard");
+    const contentDiv = document.getElementById("infocard-content");
+    
+    if (!card || !contentDiv) return;
+    
+    let html = `<h2>${d.pl_name || "Unknown Planet"}</h2>`;
+    html += `<table>`;
+    
+    const fieldsToShow = [
+        { key: "hostname", label: "Host Star" },
+        { key: "disc_year", label: "Discovery Year" },
+        { key: "sy_snum", label: "Number of Stars" },
+        { key: "sy_pnum", label: "Number of Planets" },
+        { key: "pl_orbper", label: "Orbital Period", unit: "days" },
+        { key: "pl_orbsmax", label: "Semi-Major Axis", unit: "AU" },
+        { key: "pl_bmasse", label: "Mass (Earth)", unit: "M⊕" },
+        { key: "pl_bmassj", label: "Mass (Jupiter)", unit: "M_J" },
+        { key: "pl_rade", label: "Radius (Earth)", unit: "R⊕" },
+        { key: "pl_radj", label: "Radius (Jupiter)", unit: "R_J" },
+        { key: "st_teff", label: "Stellar Temp", unit: "K" },
+        { key: "sy_dist", label: "Distance", unit: "pc" }
+    ];
+    
+    fieldsToShow.forEach(field => {
+        const val = d[field.key];
+        if (val !== undefined && val !== null && val !== "") {
+            const displayVal = typeof val === "number" ? val.toLocaleString() : val;
+            const unitSuffix = field.unit ? ` ${field.unit}` : "";
+            html += `
+                <tr>
+                    <td style="font-weight: bold; padding-right: 15px;">${field.label}:</td>
+                    <td>${displayVal}${unitSuffix}</td>
+                </tr>
+            `;
+        }
+    });
+    
+    html += `</table>`;
+    
+    contentDiv.innerHTML = html;
+    card.style.display = "block";
+}
+
+function clearInfocard() {
+    const card = document.getElementById("planet-infocard");
+    if (card) {
+        card.style.display = "none";
+    }
 }
