@@ -89,9 +89,48 @@ d3.csv("../data/nasa_export_small.csv", d => {
     createCheckboxes();
     draw(activeDimensions);
 });
+let columnExplanations = {};
+
+function parseColumnExplanations(csv) {
+    const lines = csv.split(/\r?\n/);
+    lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const parts = line.split(";");
+        if (parts.length >= 3) {
+            const col = parts[0].trim();
+            const name = parts[1].trim();
+            const desc = parts[2].trim();
+            columnExplanations[col] = { name, desc };
+        }
+    });
+}
+
+let tooltip;
+function getTooltip() {
+    if (!tooltip) {
+        tooltip = d3.select("body").append("div")
+            .style("position", "absolute")
+            .style("visibility", "hidden")
+            .style("background-color", "rgba(0, 0, 0, 0.85)")
+            .style("color", "#fff")
+            .style("padding", "8px 12px")
+            .style("border-radius", "4px")
+            .style("font-size", "12px")
+            .style("pointer-events", "none")
+            .style("z-index", "1000")
+            .style("line-height", "1.4")
+            .style("max-width", "250px")
+            .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.3)");
+    }
+    return tooltip;
+}
+
 fetch("../data/column_explanation.csv")
     .then(response => response.text())
-    .then(data => createTableFromCSV(data));
+    .then(data => {
+        parseColumnExplanations(data);
+        createTableFromCSV(data);
+    });
 
 function draw(dimensions)
 {
@@ -170,7 +209,30 @@ function draw(dimensions)
         .attr("y", -10)
         .style("text-anchor", "middle")
         .style("fill", "black")
-        .text(d => d);
+        .style("cursor", "pointer")
+        .text(d => d)
+        .on("mouseover", function(event, d) {
+            d3.select(this)
+                .style("font-weight", "bold");
+            
+            const expl = columnExplanations[d];
+            let content = `<strong>${d}</strong>`;
+            if (expl) {
+                content = `<strong>${expl.name} (${d})</strong><br/>${expl.desc}`;
+            }
+            getTooltip().html(content)
+                .style("visibility", "visible");
+        })
+        .on("mousemove", function(event) {
+            getTooltip()
+                .style("top", (event.pageY + 10) + "px")
+                .style("left", (event.pageX + 10) + "px");
+        })
+        .on("mouseout", function() {
+            d3.select(this)
+                .style("font-weight", "normal");
+            getTooltip().style("visibility", "hidden");
+        });
     const line = d3.line();
 
     function path(d) {
