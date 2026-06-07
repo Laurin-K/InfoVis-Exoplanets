@@ -1,34 +1,61 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exoplanet Visualization</title>
-
     <link rel="stylesheet" href="styling/base.css">
 </head>
-
 <body>
+    <div class="page-shell">
+        <header>
+            <p class="eyebrow">NASA Exoplanet Archive</p>
+            <h1>Exoplanet Visualization</h1>
+            <p class="subtitle">
+                Explore the dataset through coordinated views that reveal how planets differ by orbit, size,
+                distance, discovery year, and stellar properties.
+            </p>
+        </header>
 
-<header>
-    <h1>Exoplanet Visualization</h1>
-</header>
+        <section class="hero-panel">
+            <p class="section-label">How to use this app</p>
+            <p class="section-copy">
+                Each view is built for a different kind of comparison. Use the parallel coordinate plot for many
+                dimensions at once, the spiderplot for compact comparisons, and the scatterplot for focused
+                two-variable analysis.
+            </p>
+        </section>
 
-<main>
-    <div class="container">
+        <main>
+            <div class="container">
+                <div class="nav-links">
+                    <a href="pages/parallel-coordinate-plot.html">
+                        <strong>Parallel Coordinate Plot</strong>
+                        <span>Inspect many exoplanet fields at once and filter by dimension.</span>
+                    </a>
+                    <a href="pages/spiderplot.html">
+                        <strong>Spiderplot</strong>
+                        <span>Compare normalized exoplanet metrics in a radial view.</span>
+                    </a>
+                    <a href="pages/spiderplot-gallery.html">
+                        <strong>Spiderplot Gallery</strong>
+                        <span>Browse individual spiderplots for specific planets.</span>
+                    </a>
+                    <a href="pages/scatterplot.html">
+                        <strong>Scatterplot</strong>
+                        <span>Explore relationships between two selected variables.</span>
+                    </a>
+                </div>
 
-        <div class="nav-links">
-            <a href="pages/parallel-coordinate-plot.html">Parallel Coordinate Plot</a>
-            <a href="pages/spiderplot.html">Spiderplot</a>
-            <a href="pages/spiderplot-gallery.html">Spiderplot Gallery</a>
-            <a href="pages/scatterplot.html">Scatterplot</a>
-        </div>
+                <p class="footer-note">
+                    Built for exploratory analysis of exoplanet data from the NASA archive.
+                </p>
+            </div>
+        </main>
+
+        <footer>
+            &copy; 2026 Exoplanet Project
+        </footer>
     </div>
-</main>
-
-<footer>
-    &copy; 2026 Exoplanet Project
-</footer>
-
 </body>
 </html>

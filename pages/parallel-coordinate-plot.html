@@ -1,28 +1,69 @@
-<meta charset="utf-8">
-<link rel="stylesheet" href="../styling/parallel-coordinate-plot.css">
-<!-- Load d3.js -->
-<script src="https://d3js.org/d3.v7.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exoplanet Parallel Coordinate Plot</title>
+    <link rel="stylesheet" href="../styling/parallel-coordinate-plot.css">
+    <script src="https://d3js.org/d3.v7.js" defer></script>
+    <script src="../scripts/parallel-coordinate-plot.js" defer></script>
+</head>
+<body>
+    <div class="parallel-page">
+        <header class="parallel-header">
+            <div>
+                <a class="back-link" href="../index.html">Back to overview</a>
+                <p class="eyebrow">NASA Exoplanet Archive</p>
+                <h1>Parallel Coordinate Explorer</h1>
+                <p class="subtitle">
+                    Compare many exoplanets across several numeric dimensions at once. Select dimensions, switch
+                    between Earth and Jupiter reference units, and click a line to inspect one planet in detail.
+                </p>
+            </div>
+        </header>
 
-<script src="../scripts/parallel-coordinate-plot.js"></script>
+        <main class="compare-layout">
+            <aside class="panel control-panel">
+                <p class="control-label">Visible dimensions</p>
+                <div id="controls"></div>
 
-<div id="my_dataviz"></div>
-<div id="controls" style="height:100px; width:150px; overflow-y:scroll;"></div>
-<div class="toggle-container">
-    <span>Earth</span>
-    <label class="switch">
-        <input type="checkbox" onchange="toggleMassReference(this.checked)">
-        <span class="slider"></span>
-    </label>
-    <span>Jupiter</span>
-</div>
+                <p class="control-label">Mass and radius units</p>
+                <div class="toggle-container">
+                    <span>Earth</span>
+                    <label class="switch">
+                        <input type="checkbox" onchange="toggleMassReference(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Jupiter</span>
+                </div>
 
-<div id="planet-infocard" class="infocard">
-    <div id="infocard-content"></div>
-</div>
+                <p class="note">
+                    Hover an axis label for its glossary description. Click a data line to highlight one planet
+                    and show its values below the chart.
+                </p>
+            </aside>
 
-<div class="column-explanation">
-    <table id="dataTable">
-        <thead></thead>
-        <tbody></tbody>
-    </table>
-</div>
+            <section class="panel chart-panel">
+                <div id="my_dataviz"></div>
+            </section>
+        </main>
+
+        <section id="planet-infocard" class="panel infocard">
+            <div id="infocard-content"></div>
+        </section>
+
+        <section class="panel metric-panel">
+            <h2>Column Glossary</h2>
+            <p class="note">
+                These descriptions explain the available NASA export fields used by the parallel coordinate plot.
+            </p>
+            <div class="column-explanation">
+                <table id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
