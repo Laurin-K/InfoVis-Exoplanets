@@ -101,21 +101,6 @@ d3.csv("../data/nasa_export_small.csv", d => {
     createCheckboxes();
     draw(activeDimensions);
 });
-let columnExplanations = {};
-
-function parseColumnExplanations(csv) {
-    const lines = csv.split(/\r?\n/);
-    lines.slice(1).forEach(line => {
-        if (!line.trim()) return;
-        const parts = line.split(";");
-        if (parts.length >= 3) {
-            const col = parts[0].trim();
-            const name = parts[1].trim();
-            const desc = parts[2].trim();
-            columnExplanations[col] = { name, desc };
-        }
-    });
-}
 
 let tooltip;
 function getTooltip() {
@@ -136,13 +121,6 @@ function getTooltip() {
     }
     return tooltip;
 }
-
-fetch("../data/column_explanation.csv")
-    .then(response => response.text())
-    .then(data => {
-        parseColumnExplanations(data);
-        createTableFromCSV(data);
-    });
 
 function draw(dimensions)
 {
@@ -348,35 +326,7 @@ function draw(dimensions)
     }
 }
 
-function createTableFromCSV(csv) {
-    const rows = csv.split("\n").map(row => row.split(";"));
-
-    const tableHead = document.querySelector("#dataTable thead");
-    const tableBody = document.querySelector("#dataTable tbody");
-
-    // Header
-    const headerRow = document.createElement("tr");
-    rows[0].forEach(cell => {
-        const th = document.createElement("th");
-        th.textContent = cell;
-        headerRow.appendChild(th);
-    });
-    tableHead.appendChild(headerRow);
-
-    // Daten
-    rows.slice(1).forEach(row => {
-        const tr = document.createElement("tr");
-
-        row.forEach(cell => {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            tr.appendChild(td);
-        });
-
-        tableBody.appendChild(tr);
-    });
-}
-
+//Single planet selection
 let selectedPlanet = null;
 
 function selectDataline(d) {
@@ -399,6 +349,7 @@ function deselectAllDatalines() {
     clearInfocard();
 }
 
+//Infocard with selected planet
 function updateInfocard(d) {
     const card = document.getElementById("planet-infocard");
     const contentDiv = document.getElementById("infocard-content");
@@ -448,4 +399,57 @@ function clearInfocard() {
     if (card) {
         card.style.display = "none";
     }
+}
+
+//Table for column explanation
+let columnExplanations = {};
+
+fetch("../data/column_explanation.csv")
+    .then(response => response.text())
+    .then(data => {
+        parseColumnExplanations(data);
+        createTableFromCSV(data);
+    });
+
+function parseColumnExplanations(csv) {
+    const lines = csv.split(/\r?\n/);
+    lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const parts = line.split(";");
+        if (parts.length >= 3) {
+            const col = parts[0].trim();
+            const name = parts[1].trim();
+            const desc = parts[2].trim();
+            columnExplanations[col] = { name, desc };
+        }
+    });
+}
+
+function createTableFromCSV(csv) {
+    const rows = csv.split("\n").map(row => row.split(";"));
+
+    const tableHead = document.querySelector("#dataTable thead");
+    const tableBody = document.querySelector("#dataTable tbody");
+
+    // Header
+    const headerRow = document.createElement("tr");
+    rows[0].forEach(cell => {
+        const th = document.createElement("th");
+        th.textContent = cell;
+        headerRow.appendChild(th);
+    });
+    tableHead.appendChild(headerRow);
+
+    // Daten
+    rows.slice(1).forEach(row => {
+        const tr = document.createElement("tr");
+
+        row.forEach(cell => {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+        });
+
+        tableBody.appendChild(tr);
+    });
 }
