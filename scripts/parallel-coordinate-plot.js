@@ -10,8 +10,13 @@ const jupiterReferences = [
 const earthReferences = [
     "pl_bmasse", "pl_rade"
 ];
-function toggleMassReference(checked)
-{
+let activeDimensions = [
+    "sy_snum", "sy_pnum", "disc_year",
+    "pl_orbper", "pl_orbsmax"
+];
+const brushes = {};
+
+function toggleMassReference(checked) {
     //Base reference is always earth
     if(!checked){
         //remove earth columns and add jupiter columns
@@ -56,8 +61,7 @@ function createCheckboxes() {
             .text(" " + dim);
     });
 }
-//updates activeDimensions when selection has changed
-//call draw
+
 function updateDimensions() {
 
     activeDimensions = [];
@@ -70,7 +74,15 @@ function updateDimensions() {
     draw(activeDimensions);
 }
 
-let activeDimensions = ["sy_snum", "sy_pnum", "disc_year", "pl_orbper", "pl_orbsmax"];
+function initBrushes(dimensions){
+    let tempBrushes = {...brushes};
+    dimensions.forEach(dim => {
+        brushes[dim] = null;
+        if(tempBrushes[dim]){
+            brushes[dim] = tempBrushes[dim];
+        }
+    });
+}
 
 let fullData = [];
 d3.csv("../data/nasa_export_small.csv", d => {
@@ -197,12 +209,7 @@ function draw(dimensions)
         }
 
     });
-
-    const brushes = {};
-
-    dimensions.forEach(dim => {
-        brushes[dim] = null;
-    });
+    initBrushes(dimensions);
 
     // create Y-Axis
     const axis = d3.axisLeft();
@@ -283,7 +290,6 @@ function draw(dimensions)
         brushes[dim] = [min, max];
 
         updateLines();
-        console.log(dim, brushes[dim]);
     }
 
     function updateLines() {
