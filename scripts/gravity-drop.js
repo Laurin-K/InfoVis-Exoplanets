@@ -116,12 +116,6 @@ function resetDrop() {
 
 function startDrop() {
     if (state.isDropping) return;
-    
-    // Auto-reset if probes are already at the bottom
-    if (probeEarth.style.top && parseInt(probeEarth.style.top) > 10) {
-        resetDrop();
-    }
-    
     state.isDropping = true;
     
     const shaftHeight = document.querySelector(".shaft").clientHeight;
@@ -133,14 +127,6 @@ function startDrop() {
     
     let startTsEarth = null;
     let startTsExo = null;
-    let finishedEarth = false;
-    let finishedExo = false;
-    
-    function checkDone() {
-        if (finishedEarth && finishedExo) {
-            state.isDropping = false;
-        }
-    }
     
     function stepEarth(timestamp) {
         if (!startTsEarth) startTsEarth = timestamp;
@@ -155,8 +141,6 @@ function startDrop() {
             probeEarth.style.top = (10 + px) + "px";
             timerEarth.innerText = t.toFixed(2) + "s";
             probeEarth.style.transform = "translateX(-50%) scale(1.2, 0.5)";
-            finishedEarth = true;
-            checkDone();
         } else {
             probeEarth.style.top = (10 + px) + "px";
             timerEarth.innerText = t.toFixed(2) + "s";
@@ -178,8 +162,6 @@ function startDrop() {
             timerExo.innerText = t.toFixed(2) + "s";
             const squish = Math.max(0.2, Math.min(0.8, 1 - (state.gExo / 50)));
             probeExo.style.transform = `translateX(-50%) scale(1.2, ${squish})`;
-            finishedExo = true;
-            checkDone();
         } else {
             probeExo.style.top = (10 + px) + "px";
             timerExo.innerText = t.toFixed(2) + "s";

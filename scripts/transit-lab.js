@@ -106,7 +106,6 @@ function onPlanetSelect(planetName) {
 }
 
 let animFrame;
-let startTime = null;
 
 function updateSimulation() {
     cancelAnimationFrame(animFrame);
