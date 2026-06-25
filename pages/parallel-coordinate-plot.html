@@ -28,13 +28,20 @@
                 <div id="controls"></div>
 
                 <p class="control-label">Mass and radius units</p>
-                <div class="toggle-container">
-                    <span>Earth</span>
-                    <label class="switch">
-                        <input type="checkbox" onchange="toggleMassReference(this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                    <span>Jupiter</span>
+                <div class="unit-toggle-wrapper">
+                    <div class="toggle-container">
+                        <span class="unit-badge active" id="badge-earth">Earth</span>
+                        <label class="switch">
+                            <input type="checkbox" onchange="toggleMassReference(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="unit-badge" id="badge-jupiter">Jupiter</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="resetBrushing()">Reset Brushing</button>
+                    <button class="action-btn outline" onclick="toggleFullscreen()">Fullscreen Chart</button>
                 </div>
 
                 <p class="note">
@@ -43,7 +50,7 @@
                 </p>
             </aside>
 
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" id="chart-panel">
                 <div id="my_dataviz"></div>
             </section>
         </main>

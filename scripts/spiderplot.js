@@ -208,9 +208,18 @@ function createSpiderSvg(planets, options = {}) {
             const value = Math.max(0, Math.min(1, normalizeValue(metric, planet[metric.key])));
             return polarPoint(center, radius, angle, value);
         });
-        const color = options.color || colors[index % colors.length];
+        const color = options.getColor ? options.getColor(planet) : (options.color || colors[index % colors.length]);
 
-        return `<polygon class="radar-area" points="${points.map(point => `${point.x},${point.y}`).join(" ")}" fill="${color}" stroke="${color}"></polygon>`;
+        const pointCircles = points.map((point, metricIndex) => {
+            const rawVal = planet[metrics[metricIndex].key];
+            const textVal = rawVal == null ? "No Data" : rawVal.toLocaleString();
+            return `<circle cx="${point.x}" cy="${point.y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
+                <title>${metrics[metricIndex].label}: ${textVal} ${metrics[metricIndex].unit}</title>
+            </circle>`;
+        }).join("");
+
+        return `<polygon class="radar-area" points="${points.map(point => `${point.x},${point.y}`).join(" ")}" fill="${color}" stroke="${color}"></polygon>
+                ${pointCircles}`;
     }).join("");
 
     return `
@@ -247,44 +256,68 @@ function planetMatches(planet, query) {
 
 function updatePlanetSelect() {
     const input = document.querySelector("#planet-search");
-    const select = document.querySelector("#planet-select");
-    if (!input || !select) {
+    const datalist = document.querySelector("#planet-datalist");
+    if (!input || !datalist) {
         return;
     }
 
     const query = input.value;
     const selectedNames = new Set(state.selected.map(planet => planet.pl_name));
+    
+    // Auto-add exact match
+    const exactMatch = state.allPlanets.find(p => `${p.pl_name} (${p.hostname})` === query && !selectedNames.has(p.pl_name));
+    if (exactMatch) {
+        if (state.selected.length < maxSelection) {
+            state.selected.push(exactMatch);
+            input.value = "";
+            updateCompareView();
+        }
+        return;
+    }
+
     state.visiblePlanets = state.allPlanets
         .filter(planet => planetMatches(planet, query) && !selectedNames.has(planet.pl_name))
-        .slice(0, 250);
+        .slice(0, 100); // Reduce rendering load for datalist
 
-    select.innerHTML = state.visiblePlanets
-        .map((planet, index) => `<option value="${index}">${planet.pl_name} · ${planet.hostname}</option>`)
+    datalist.innerHTML = state.visiblePlanets
+        .map((planet) => `<option value="${planet.pl_name} (${planet.hostname})"></option>`)
         .join("");
 }
 
 function renderSelectedPlanets() {
     const container = document.querySelector("#selected-planets");
     const note = document.querySelector("#selection-note");
-    const addButton = document.querySelector("#add-planet");
-    if (!container || !note || !addButton) {
+    if (!container || !note) {
         return;
     }
 
     container.innerHTML = state.selected.map((planet, index) => `
-        <div class="planet-chip">
+        <div class="planet-chip ${planet._hidden ? 'hidden' : ''}">
             <span class="chip-label">
-                <span class="color-dot" style="background:${colors[index]}"></span>
-                <span>${planet.pl_name}</span>
+                <span class="color-dot" style="background:${planet._hidden ? '#555' : colors[index]}"></span>
+                <span style="opacity: ${planet._hidden ? '0.5' : '1'}">${planet.pl_name}</span>
             </span>
-            <button type="button" data-remove-index="${index}">Remove</button>
+            <div>
+                <button type="button" class="eye-btn" data-toggle-index="${index}" style="background:none; border:none; color:white; cursor:pointer;" title="Toggle visibility">
+                    ${planet._hidden ? '👁️‍🗨️' : '👁️'}
+                </button>
+                <button type="button" data-remove-index="${index}" style="background:none; border:none; color:#ff6b6b; cursor:pointer;" title="Remove">✕</button>
+            </div>
         </div>
     `).join("");
 
-    container.querySelectorAll("button").forEach(button => {
+    container.querySelectorAll("button[data-remove-index]").forEach(button => {
         button.addEventListener("click", () => {
             const index = Number(button.dataset.removeIndex);
             state.selected.splice(index, 1);
+            updateCompareView();
+        });
+    });
+
+    container.querySelectorAll("button.eye-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = Number(button.dataset.toggleIndex);
+            state.selected[index]._hidden = !state.selected[index]._hidden;
             updateCompareView();
         });
     });
@@ -293,11 +326,9 @@ function renderSelectedPlanets() {
         note.textContent = "Maximum of 4 planets reached. Remove one before adding another.";
         note.classList.add("error");
     } else {
-        note.textContent = `${state.selected.length} of ${maxSelection} planets selected.`;
+        note.textContent = `${state.selected.length} of ${maxSelection} planets selected. Search to add.`;
         note.classList.remove("error");
     }
-
-    addButton.disabled = state.selected.length >= maxSelection || !state.visiblePlanets.length;
 }
 
 function renderCompareChart() {
@@ -307,11 +338,19 @@ function renderCompareChart() {
         return;
     }
 
-    const planets = state.selected.length ? state.selected : state.allPlanets.slice(0, 2);
-    chart.innerHTML = createSpiderSvg(planets);
-    legend.innerHTML = planets.map((planet, index) => `
-        <span class="legend-item">
-            <span class="color-dot" style="background:${colors[index]}"></span>
+    const visiblePlanets = state.selected.filter(p => !p._hidden);
+    const planets = state.selected.length ? visiblePlanets : state.allPlanets.slice(0, 2);
+    
+    chart.innerHTML = createSpiderSvg(planets, {
+        getColor: (p) => {
+            let i = state.selected.indexOf(p);
+            return colors[i >= 0 ? i : 0];
+        }
+    });
+
+    legend.innerHTML = state.selected.map((planet, index) => `
+        <span class="legend-item" style="opacity: ${planet._hidden ? '0.4' : '1'}">
+            <span class="color-dot" style="background:${planet._hidden ? '#555' : colors[index]}"></span>
             ${planet.pl_name}
         </span>
     `).join("");
@@ -325,25 +364,21 @@ function updateCompareView() {
 
 function initCompareView() {
     const search = document.querySelector("#planet-search");
-    const addButton = document.querySelector("#add-planet");
-    const select = document.querySelector("#planet-select");
 
-    state.selected = state.allPlanets.slice(0, Math.min(2, state.allPlanets.length));
+    // Pre-select HD 209458 b if available, otherwise first two
+    const demo1 = state.allPlanets.find(p => p.pl_name === "HD 209458 b");
+    const demo2 = state.allPlanets.find(p => p.pl_name === "Kepler-186 f");
+    
+    if (demo1 && demo2) {
+        state.selected = [demo1, demo2];
+    } else {
+        state.selected = state.allPlanets.slice(0, Math.min(2, state.allPlanets.length));
+    }
+
     renderMetricList();
     updateCompareView();
 
     search.addEventListener("input", updateCompareView);
-    addButton.addEventListener("click", () => {
-        if (state.selected.length >= maxSelection || !state.visiblePlanets.length) {
-            return;
-        }
-
-        const planet = state.visiblePlanets[Number(select.value) || 0];
-        if (planet) {
-            state.selected.push(planet);
-            updateCompareView();
-        }
-    });
 }
 
 function renderGallery(query = "") {

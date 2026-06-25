@@ -17,6 +17,17 @@ let activeDimensions = [
 const brushes = {};
 
 function toggleMassReference(checked) {
+    const badgeEarth = document.getElementById('badge-earth');
+    const badgeJupiter = document.getElementById('badge-jupiter');
+    if (badgeEarth && badgeJupiter) {
+        if (!checked) {
+            badgeEarth.classList.add('active');
+            badgeJupiter.classList.remove('active');
+        } else {
+            badgeEarth.classList.remove('active');
+            badgeJupiter.classList.add('active');
+        }
+    }
     //Base reference is always earth
     if(!checked){
         //remove earth columns and add jupiter columns
@@ -59,6 +70,20 @@ function createCheckboxes() {
 
         label.append("span")
             .text(" " + dim);
+            
+        // Setup tooltip if data is already loaded
+        if (columnExplanations[dim]) {
+            label.attr("title", columnExplanations[dim].name + ": " + columnExplanations[dim].desc);
+        }
+    });
+}
+
+function updateCheckboxTooltips() {
+    d3.select("#controls").selectAll("label").each(function() {
+        const input = d3.select(this).select("input").node();
+        if (input && columnExplanations[input.value]) {
+            d3.select(this).attr("title", columnExplanations[input.value].name + ": " + columnExplanations[input.value].desc);
+        }
     });
 }
 
@@ -192,12 +217,39 @@ function draw(dimensions)
     // create Y-Axis
     const axis = d3.axisLeft();
 
+    // Drag functionality for movable axes
+    let dragging = {};
+    function position(d) {
+        let v = dragging[d];
+        return v == null ? x(d) : v;
+    }
+
     const g = svg.selectAll(".dimension")
         .data(dimensions)
         .enter()
         .append("g")
         .attr("class", "dimension")
         .attr("transform", d => `translate(${x(d)})`)
+        .call(d3.drag()
+            .subject(function(event, d) { return {x: x(d)}; })
+            .on("start", function(event, d) {
+                dragging[d] = x(d);
+                this.parentNode.appendChild(this); // bring to front
+            })
+            .on("drag", function(event, d) {
+                dragging[d] = Math.min(width, Math.max(0, event.x));
+                dimensions.sort(function(a, b) { return position(a) - position(b); });
+                x.domain(dimensions);
+                g.attr("transform", function(d) { return "translate(" + position(d) + ")"; });
+                svg.selectAll(".line").attr("d", path);
+            })
+            .on("end", function(event, d) {
+                delete dragging[d];
+                activeDimensions = [...dimensions]; // save new order
+                d3.select(this).transition().duration(500).attr("transform", "translate(" + x(d) + ")");
+                svg.selectAll(".line").transition().duration(500).attr("d", path);
+            })
+        )
         .each(function(dim) {
 
             d3.select(this)
@@ -238,14 +290,22 @@ function draw(dimensions)
     g.append("g")
         .attr("class", "brush")
         .each(function(dim) {
+            
+            const brush = d3.brushY()
+                .extent([[-20, 0], [20, height]]) // increased from -10, 10
+                .on("start brush end", function(event) {
+                    brushed(event, dim);
+                });
 
-            d3.select(this).call(
-                d3.brushY()
-                    .extent([[-10, 0], [10, height]])
-                    .on("start brush end", function(event) {
-                        brushed(event, dim);
-                    })
-            );
+            d3.select(this).call(brush);
+            
+            // Restore previous brush if it existed
+            if (brushes[dim]) {
+                // Because invert() can be tricky with log scales, we set the pixel range directly
+                const y1 = y[dim](brushes[dim][0]);
+                const y0 = y[dim](brushes[dim][1]);
+                d3.select(this).call(brush.move, [y0, y1]);
+            }
 
         });
     const line = d3.line();
@@ -290,7 +350,7 @@ function draw(dimensions)
     }
     function path(d) {
         return line(dimensions.map(dim => [
-            x(dim),
+            position(dim),
             y[dim](d[dim])
         ]));
     }
@@ -452,4 +512,24 @@ function createTableFromCSV(csv) {
 
         tableBody.appendChild(tr);
     });
+    // Now that explanations are loaded, update tooltips
+    updateCheckboxTooltips();
+}
+
+function resetBrushing() {
+    for (let dim in brushes) {
+        brushes[dim] = null;
+    }
+    d3.selectAll(".brush").call(d3.brushY().move, null);
+    d3.selectAll(".line").style("display", null);
+}
+
+function toggleFullscreen() {
+    const chartPanel = document.getElementById('chart-panel');
+    if (chartPanel) {
+        chartPanel.classList.toggle('fullscreen');
+        if (activeDimensions.length > 0) {
+            setTimeout(() => draw(activeDimensions), 50);
+        }
+    }
 }

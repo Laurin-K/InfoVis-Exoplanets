@@ -5,16 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exoplanet Visualization</title>
     <link rel="stylesheet" href="styling/base.css">
+    <link rel="stylesheet" href="styling/tutorial.css">
+    <script src="scripts/tutorial.js" defer></script>
 </head>
 <body>
     <div class="page-shell">
-        <header>
+        <header style="position: relative;">
             <p class="eyebrow">NASA Exoplanet Archive</p>
             <h1>Exoplanet Visualization</h1>
             <p class="subtitle">
                 Explore the dataset through coordinated views that reveal how planets differ by orbit, size,
                 distance, discovery year, and stellar properties.
             </p>
+            <button onclick="window.openTutorial()" style="position: absolute; top: 10px; right: 20px; background: #8fe3c7; border: none; border-radius: 20px; padding: 8px 16px; font-weight: bold; cursor: pointer;">Tutorial & Help</button>
         </header>
 
         <section class="hero-panel">

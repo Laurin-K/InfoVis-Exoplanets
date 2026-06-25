@@ -32,6 +32,7 @@ const state = {
     glossaryByColumn: new Map(),
     xField: "pl_orbsmax",
     yField: "pl_rade",
+    colorField: "disc_year",
     yearDomain: [null, null],
     resizeTimer: null
 };
@@ -179,45 +180,68 @@ function updatePlotNote(validCount, totalCount, xScaleType, yScaleType) {
 }
 
 function updateLegend() {
-    const [minYear, maxYear] = state.yearDomain;
-    const yearGradient = d3.select("#year-gradient");
+    const legend = d3.select("#dynamic-legend");
+    legend.html("");
 
-    if (!isValidNumber(minYear) || !isValidNumber(maxYear)) {
-        yearGradient.style("background", "#8895ae");
-        d3.select("#year-min").text("-");
-        d3.select("#year-max").text("-");
+    const field = state.colorField;
+    const values = state.data.map(d => d[field]).filter(isValidNumber);
+    if (!values.length) {
+        legend.html("<div class='legend-caption'>No color data</div>");
         return;
     }
 
-    if (minYear === maxYear) {
-        const color = d3.interpolateViridis(0.55);
-        yearGradient.style("background", color);
-    } else {
-        const colorScale = d3.scaleSequential(d3.interpolateViridis).domain([minYear, maxYear]);
-        const stops = d3.range(0, 1.01, 0.2).map(step => {
-            const value = minYear + (maxYear - minYear) * step;
-            return `${colorScale(value)} ${Math.round(step * 100)}%`;
+    legend.append("div").attr("class", "legend-heading").text("Point color").style("margin-bottom", "10px").style("font-weight", "bold");
+
+    if (field === "sy_snum" || field === "sy_pnum") {
+        const unique = Array.from(new Set(values)).sort((a,b)=>a-b);
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(unique);
+        
+        const wrap = legend.append("div").style("display", "flex").style("gap", "10px").style("flex-wrap", "wrap");
+        unique.forEach(val => {
+            const item = wrap.append("div").style("display", "flex").style("align-items", "center").style("gap", "5px");
+            item.append("div").style("width", "12px").style("height", "12px").style("border-radius", "50%").style("background", colorScale(val));
+            item.append("span").style("font-size", "12px").text(val);
         });
-
-        yearGradient.style("background", `linear-gradient(90deg, ${stops.join(", ")})`);
+        legend.append("div").attr("class", "legend-caption").style("margin-top", "12px").text(fieldLabel(field));
+        
+    } else {
+        const [minVal, maxVal] = d3.extent(values);
+        const bar = legend.append("div").attr("class", "legend-bar");
+        const grad = bar.append("div").style("height", "10px").style("border-radius", "4px").style("width", "100%");
+        
+        if (minVal === maxVal) {
+            grad.style("background", d3.interpolateViridis(0.55));
+        } else {
+            const stops = d3.range(0, 1.01, 0.2).map(step => {
+                const value = minVal + (maxVal - minVal) * step;
+                return `${d3.interpolateViridis(step)} ${Math.round(step * 100)}%`;
+            });
+            grad.style("background", `linear-gradient(90deg, ${stops.join(", ")})`);
+        }
+        
+        const labels = legend.append("div").attr("class", "legend-labels").style("display", "flex").style("justify-content", "space-between").style("font-size", "12px").style("margin-top", "6px");
+        labels.append("span").text(formatValue(field, minVal));
+        labels.append("span").text(formatValue(field, maxVal));
+        
+        legend.append("div").attr("class", "legend-caption").style("margin-top", "8px").text(fieldLabel(field));
     }
-
-    d3.select("#year-min").text(formatValue("disc_year", minYear));
-    d3.select("#year-max").text(formatValue("disc_year", maxYear));
 }
 
-function createYearColorScale() {
-    const [minYear, maxYear] = state.yearDomain;
+function createColorScale() {
+    const field = state.colorField;
+    const values = state.data.map(d => d[field]).filter(isValidNumber);
+    if (!values.length) return () => "#8ea0b8";
 
-    if (!isValidNumber(minYear) || !isValidNumber(maxYear)) {
-        return null;
+    if (field === "sy_snum" || field === "sy_pnum") {
+        const unique = Array.from(new Set(values)).sort((a,b)=>a-b);
+        return d3.scaleOrdinal(d3.schemeCategory10).domain(unique);
+    } else {
+        const [minVal, maxVal] = d3.extent(values);
+        if (minVal === maxVal) return () => d3.interpolateViridis(0.55);
+        
+        const scale = d3.scaleSequential(d3.interpolateViridis).domain([minVal, maxVal]);
+        return (val) => scale(val);
     }
-
-    if (minYear === maxYear) {
-        return () => d3.interpolateViridis(0.55);
-    }
-
-    return d3.scaleSequential(d3.interpolateViridis).domain([minYear, maxYear]);
 }
 
 function syncSelectValues() {
@@ -302,6 +326,13 @@ function buildControls() {
         state.yField = state.xField;
         state.xField = nextX;
         syncSelectValues();
+        drawScatterplot();
+    });
+
+    const colorSelect = d3.select("#color-select");
+    colorSelect.property("value", state.colorField);
+    colorSelect.on("change", function() {
+        state.colorField = this.value;
         drawScatterplot();
     });
 }
@@ -428,7 +459,7 @@ function drawScatterplot() {
 
     const xScaleInfo = createScale(validData.map(d => d[state.xField]), [0, innerWidth]);
     const yScaleInfo = createScale(validData.map(d => d[state.yField]), [innerHeight, 0]);
-    const colorScale = createYearColorScale();
+    const colorScale = createColorScale();
 
     const svg = d3.select(container)
         .append("svg")
@@ -487,11 +518,8 @@ function drawScatterplot() {
         .attr("class", "axis")
         .call(d3.axisLeft(yScaleInfo.scale).ticks(6));
 
-    xAxis.selectAll(".tick line")
-        .attr("y2", 8);
-
-    yAxis.selectAll(".tick line")
-        .attr("x2", -8);
+    xAxis.selectAll(".tick line").attr("y2", 8);
+    yAxis.selectAll(".tick line").attr("x2", -8);
 
     root.append("text")
         .attr("class", "axis-label")
@@ -501,41 +529,29 @@ function drawScatterplot() {
         .text(fieldLabel(state.xField));
 
     root.append("text")
-        .attr("class", "axis-subtitle")
-        .attr("x", innerWidth / 2)
-        .attr("y", innerHeight + 68)
-        .attr("text-anchor", "middle")
-        .text(state.xField);
-
-    root.append("text")
         .attr("class", "axis-label")
         .attr("transform", `translate(-56, ${innerHeight / 2}) rotate(-90)`)
         .attr("text-anchor", "middle")
         .text(fieldLabel(state.yField));
 
-    root.append("text")
-        .attr("class", "axis-subtitle")
-        .attr("transform", `translate(-40, ${innerHeight / 2}) rotate(-90)`)
-        .attr("text-anchor", "middle")
-        .text(state.yField);
-
     const chart = root.append("g")
         .attr("clip-path", "url(#scatter-clip)");
 
-    chart.selectAll("circle")
+    const dots = chart.append("g");
+
+    dots.selectAll("circle")
         .data(validData)
         .join("circle")
         .attr("class", "point")
         .attr("cx", d => xScaleInfo.scale(d[state.xField]))
         .attr("cy", d => yScaleInfo.scale(d[state.yField]))
         .attr("r", width < 640 ? 3 : 3.8)
-        .attr("fill", d => colorScale && isValidNumber(d.disc_year) ? colorScale(d.disc_year) : "#8ea0b8")
+        .attr("fill", d => colorScale && isValidNumber(d[state.colorField]) ? colorScale(d[state.colorField]) : "#8ea0b8")
         .attr("fill-opacity", 0.86)
         .attr("stroke", "rgba(5, 10, 20, 0.72)")
         .attr("stroke-width", 1)
         .on("mouseenter", function(event, datum) {
             d3.select(this)
-                .attr("r", width < 640 ? 5 : 5.5)
                 .attr("stroke-width", 2);
             showTooltip(event, datum);
         })
@@ -544,10 +560,31 @@ function drawScatterplot() {
         })
         .on("mouseleave", function() {
             d3.select(this)
-                .attr("r", width < 640 ? 3 : 3.8)
                 .attr("stroke-width", 1);
             hideTooltip();
         });
+
+    const zoom = d3.zoom()
+        .scaleExtent([0.5, 20])
+        .extent([[0, 0], [innerWidth, innerHeight]])
+        .on("zoom", (event) => {
+            dots.attr("transform", event.transform);
+            
+            const newX = event.transform.rescaleX(xScaleInfo.scale);
+            const newY = event.transform.rescaleY(yScaleInfo.scale);
+            
+            xAxis.call(d3.axisBottom(newX).ticks(6));
+            yAxis.call(d3.axisLeft(newY).ticks(6));
+            
+            xAxis.selectAll(".tick line").attr("y2", 8);
+            yAxis.selectAll(".tick line").attr("x2", -8);
+            
+            dots.selectAll("circle")
+                .attr("r", (width < 640 ? 3 : 3.8) / event.transform.k)
+                .attr("stroke-width", 1 / event.transform.k);
+        });
+
+    svg.call(zoom);
 
     updateLegend();
     updatePlotNote(validData.length, state.data.length, xScaleInfo.type, yScaleInfo.type);

@@ -25,14 +25,11 @@
 
         <main class="compare-layout">
             <aside class="panel control-panel">
-                <label class="control-label" for="planet-search">Search planet</label>
-                <input id="planet-search" type="search" placeholder="Type a planet name...">
+                <label class="control-label" for="planet-search">Search & Add Planet</label>
+                <input id="planet-search" type="search" list="planet-datalist" placeholder="Type a planet name...">
+                <datalist id="planet-datalist"></datalist>
 
-                <label class="control-label" for="planet-select">Planet</label>
-                <select id="planet-select"></select>
-
-                <button id="add-planet" class="primary-button" type="button">Add planet</button>
-                <p id="selection-note" class="note">Choose 1 to 4 planets.</p>
+                <p id="selection-note" class="note">Choose 1 to 4 planets. Selecting from search adds it.</p>
                 <div id="selected-planets" class="selected-planets"></div>
             </aside>
 

@@ -34,28 +34,21 @@
             <aside class="panel control-panel">
                 <div id="controls"></div>
 
-                <div class="legend">
-                    <div class="legend-heading">Point color</div>
-                    <div class="legend-bar">
-                        <div id="year-gradient"></div>
-                    </div>
-                    <div class="legend-labels">
-                        <span id="year-min">-</span>
-                        <span id="year-max">-</span>
-                    </div>
-                    <div class="legend-caption">Discovery year</div>
+                <div class="color-control" style="margin-top: 20px;">
+                    <label class="control-label" for="color-select" style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Point Color</label>
+                    <select id="color-select" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px;">
+                        <option value="disc_year">Discovery Year</option>
+                        <option value="sy_snum">Number of Stars</option>
+                        <option value="sy_pnum">System Planet Count</option>
+                        <option value="pl_eqt">Equilibrium Temp (K)</option>
+                    </select>
+                </div>
+
+                <div class="legend" id="dynamic-legend">
+                    <!-- populated by JS -->
                 </div>
             </aside>
         </div>
-
-        <div class="column-explanation">
-            <table id="dataTable">
-                <thead></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="tooltip" class="tooltip"></div>
+    </div>    <div id="tooltip" class="tooltip"></div>
 </body>
 </html>
