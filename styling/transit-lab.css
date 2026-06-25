@@ -1,0 +1,51 @@
+:root {
+    --bg: #050a14;
+    --panel: rgba(12, 19, 33, 0.82);
+    --border: rgba(154, 178, 217, 0.18);
+    --text: #edf3ff;
+    --muted: #95a5c1;
+    --accent: #71eadf;
+    --accent-warm: #f3b26d;
+    --radius: 22px;
+}
+
+body {
+    margin: 0; min-height: 100vh; color: var(--text); font-family: "Bahnschrift", "Segoe UI", sans-serif;
+    background: radial-gradient(circle at 50% 50%, #081525 0%, #040711 100%);
+}
+
+.page-container { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
+.header { margin-bottom: 30px; }
+.eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem; font-weight: bold; }
+h1 { margin: 5px 0; font-size: 2.5rem; }
+.subtitle { color: var(--muted); max-width: 800px; line-height: 1.5; }
+
+.main-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
+
+.control-block { margin-bottom: 25px; }
+.control-block label { display: block; color: var(--muted); font-size: 0.9rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+select, input[type="range"] { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
+
+.primary-button { width: 100%; padding: 12px; margin-top: 10px; background: linear-gradient(45deg, var(--accent), var(--accent-warm)); border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+.primary-button:hover { transform: scale(1.02); }
+
+.info-block { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+.info-block h3 { margin-top: 0; font-size: 1.1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;}
+.info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
+.info-row span { color: var(--muted); }
+.highlight { color: var(--accent); font-weight: bold; }
+.note { font-size: 0.85rem; color: var(--muted); margin-top: 5px; font-style: italic; }
+
+.transit-container { display: flex; flex-direction: column; height: 600px; gap: 20px;}
+.transit-view { flex: 1; background: #000; border-radius: 12px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.lightcurve-view { flex: 1; background: rgba(0,0,0,0.5); border-radius: 12px; position: relative; }
+
+.star { width: 200px; height: 200px; background: radial-gradient(circle at center, #ffffff 0%, #ffffaa 60%, #ff9900 100%); border-radius: 50%; box-shadow: 0 0 50px #ff9900; z-index: 1; }
+.planet { width: 20px; height: 20px; background: #000; border-radius: 50%; position: absolute; left: 0; z-index: 2; box-shadow: inset -5px -5px 10px rgba(255,255,255,0.2); }
+
+.axis text { fill: var(--muted); font-family: inherit; }
+.axis path, .axis line { stroke: var(--border); }
+.line { fill: none; stroke: var(--accent); stroke-width: 3px; }
+.indicator { stroke: white; stroke-width: 1px; stroke-dasharray: 4 4; }
