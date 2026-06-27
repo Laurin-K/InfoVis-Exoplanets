@@ -27,14 +27,15 @@ const integerDimensions = new Set([
 ]);
 
 const state = {
+    xField: "pl_orbsmax",
+    yField: "pl_bmasse",
+    colorField: "disc_year",
     data: [],
     glossaryRows: [],
     glossaryByColumn: new Map(),
-    xField: "pl_orbsmax",
-    yField: "pl_rade",
-    colorField: "disc_year",
-    yearDomain: [null, null],
-    resizeTimer: null
+    yearDomain: [],
+    resizeTimer: null,
+    interactionMode: "pan"
 };
 
 let tooltip = null;
@@ -585,6 +586,60 @@ function drawScatterplot() {
         });
 
     svg.call(zoom);
+
+    const brush = d3.brush()
+        .extent([[0, 0], [innerWidth, innerHeight]])
+        .on("end", function(event) {
+            if (!event.selection) return;
+            const [[x0, y0], [x1, y1]] = event.selection;
+            d3.select(this).call(brush.move, null);
+            
+            const scaleX = innerWidth / (x1 - x0);
+            const scaleY = innerHeight / (y1 - y0);
+            const k = Math.min(scaleX, scaleY, 20);
+            const transform = d3.zoomIdentity
+                .translate(innerWidth / 2, innerHeight / 2)
+                .scale(k)
+                .translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+            
+            svg.transition().duration(750).call(zoom.transform, transform);
+            
+            // Switch back to pan mode automatically after zoom
+            document.getElementById("mode-pan").click();
+        });
+
+    const brushGroup = chart.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    // Initial state
+    if (state.interactionMode === "box") {
+        brushGroup.style("pointer-events", "all");
+        svg.on(".zoom", null);
+    } else {
+        brushGroup.style("pointer-events", "none");
+    }
+
+    // Interaction controls event listeners
+    document.getElementById("mode-pan").onclick = function() {
+        state.interactionMode = "pan";
+        this.classList.add("active");
+        document.getElementById("mode-box").classList.remove("active");
+        brushGroup.style("pointer-events", "none");
+        svg.call(zoom);
+    };
+
+    document.getElementById("mode-box").onclick = function() {
+        state.interactionMode = "box";
+        this.classList.add("active");
+        document.getElementById("mode-pan").classList.remove("active");
+        brushGroup.style("pointer-events", "all");
+        svg.on(".zoom", null);
+    };
+
+    document.getElementById("reset-zoom").onclick = function() {
+        svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+    };
 
     updateLegend();
     updatePlotNote(validData.length, state.data.length, xScaleInfo.type, yScaleInfo.type);
