@@ -156,9 +156,9 @@ function draw(dimensions)
     );
 
     // SVG Setup
-    const margin = { top: 30, right: 50, bottom: 10, left: 50 };
+    const margin = { top: 30, right: 50, bottom: 60, left: 50 }; // Increased bottom margin for inputs
     const width = 800 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const height = 460 - margin.top - margin.bottom; // Increased total height slightly to fit inputs
 
     const svg = d3.select("#my_dataviz")
         .append("svg")
@@ -294,26 +294,85 @@ function draw(dimensions)
             const brush = d3.brushY()
                 .extent([[-20, 0], [20, height]]) // increased from -10, 10
                 .on("start brush end", function(event) {
-                    brushed(event, dim);
+                    brushed(event, dim, this);
                 });
 
+            // Store the brush reference on the DOM node for manual movement later
+            this.__brush = brush;
             d3.select(this).call(brush);
             
             // Restore previous brush if it existed
             if (brushes[dim]) {
-                // Because invert() can be tricky with log scales, we set the pixel range directly
                 const y1 = y[dim](brushes[dim][0]);
                 const y0 = y[dim](brushes[dim][1]);
                 d3.select(this).call(brush.move, [y0, y1]);
             }
 
         });
+
+    const brushInputs = g.append("foreignObject")
+        .attr("x", -35)
+        .attr("y", height + 5)
+        .attr("width", 70)
+        .attr("height", 60)
+        .attr("class", "brush-inputs");
+
+    brushInputs.append("xhtml:div")
+        .style("display", "flex")
+        .style("flex-direction", "column")
+        .style("gap", "4px")
+        .html(dim => `
+            <input type="number" class="brush-max" data-dim="${dim}" placeholder="Max" step="any" title="Maximum filter value" />
+            <input type="number" class="brush-min" data-dim="${dim}" placeholder="Min" step="any" title="Minimum filter value" />
+        `);
+
+    d3.selectAll(".brush-max, .brush-min").on("change", function(event) {
+        // Prevent event from bubbling and causing issues
+        event.stopPropagation();
+        
+        const dim = this.dataset.dim;
+        const parentDiv = this.parentElement;
+        const maxInput = parentDiv.querySelector(".brush-max");
+        const minInput = parentDiv.querySelector(".brush-min");
+        
+        const maxVal = parseFloat(maxInput.value);
+        const minVal = parseFloat(minInput.value);
+
+        const brushGroup = svg.selectAll(".dimension")
+            .filter(d => d === dim)
+            .select(".brush")
+            .node();
+        
+        if (!brushGroup || !brushGroup.__brush) return;
+
+        if (isNaN(maxVal) && isNaN(minVal)) {
+            d3.select(brushGroup).call(brushGroup.__brush.move, null);
+        } else {
+            const scale = y[dim];
+            const maxDomain = scale.domain()[1];
+            const minDomain = scale.domain()[0];
+            
+            const effectiveMax = isNaN(maxVal) ? maxDomain : maxVal;
+            const effectiveMin = isNaN(minVal) ? minDomain : minVal;
+            
+            const y0 = scale(effectiveMax);
+            const y1 = scale(effectiveMin);
+            
+            d3.select(brushGroup).call(brushGroup.__brush.move, [Math.min(y0, y1), Math.max(y0, y1)]);
+        }
+    });
     const line = d3.line();
 
-    function brushed(event, dim) {
+    function brushed(event, dim, brushNode) {
+
+        const dimGroup = brushNode.parentNode;
+        const maxInput = dimGroup.querySelector(".brush-max");
+        const minInput = dimGroup.querySelector(".brush-min");
 
         if (!event.selection) {
             brushes[dim] = null;
+            if (maxInput && document.activeElement !== maxInput) maxInput.value = "";
+            if (minInput && document.activeElement !== minInput) minInput.value = "";
             updateLines();
             return;
         }
@@ -326,6 +385,14 @@ function draw(dimensions)
         if (min > max) [min, max] = [max, min];
 
         brushes[dim] = [min, max];
+        
+        // Only update input values if the user is not actively typing in them
+        if (maxInput && document.activeElement !== maxInput) {
+            maxInput.value = +max.toFixed(3);
+        }
+        if (minInput && document.activeElement !== minInput) {
+            minInput.value = +min.toFixed(3);
+        }
 
         updateLines();
     }
