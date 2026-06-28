@@ -40,10 +40,10 @@ body::before {
 }
 
 .scatterplot-page {
-    position: relative;
-    width: min(1240px, calc(100vw - 32px));
-    margin: 0 auto;
-    padding: 28px 0 40px;
+  position: relative;
+  width: min(1920px, 96vw);
+  margin: 0 auto;
+  padding: 28px 0 42px;
 }
 
 .scatterplot-header {
@@ -98,10 +98,10 @@ body::before {
 }
 
 .scatterplot-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.95fr);
-    gap: 18px;
-    align-items: start;
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
 }
 
 .panel {
@@ -123,8 +123,11 @@ body::before {
 }
 
 #controls {
-    display: grid;
-    gap: 14px;
+  display: grid;
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .control-block label {
@@ -284,7 +287,7 @@ body::before {
 
 .column-explanation {
     margin-top: 18px;
-    max-height: 420px;
+    max-height: 600px;
     padding: 18px;
     overflow: auto;
     background: var(--panel);
@@ -379,11 +382,11 @@ body::before {
     }
 }
 
-@media (max-width: 640px) {
-    .scatterplot-page {
-        width: min(100vw - 20px, 1240px);
-    }
-
+@media (max-width: 560px) {
+  .scatterplot-page {
+    width: min(100vw - 20px, 1600px);
+    padding-top: 18px;
+  }
     .scatterplot-header {
         padding: 8px 4px 14px;
     }
