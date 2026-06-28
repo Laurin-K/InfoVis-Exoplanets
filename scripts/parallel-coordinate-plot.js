@@ -156,9 +156,16 @@ function draw(dimensions)
     );
 
     // SVG Setup
-    const margin = { top: 30, right: 50, bottom: 60, left: 50 }; // Increased bottom margin for inputs
-    const width = 800 - margin.left - margin.right;
-    const height = 460 - margin.top - margin.bottom; // Increased total height slightly to fit inputs
+    const container = document.querySelector("#my_dataviz");
+    const containerRect = container.getBoundingClientRect();
+    
+    // Expand to fit container, with a minimum size fallback
+    const targetWidth = Math.max(800, containerRect.width || 800);
+    const targetHeight = Math.max(460, containerRect.height || 460);
+
+    const margin = { top: 30, right: 50, bottom: 60, left: 50 };
+    const width = targetWidth - margin.left - margin.right;
+    const height = targetHeight - margin.top - margin.bottom;
 
     const svg = d3.select("#my_dataviz")
         .append("svg")

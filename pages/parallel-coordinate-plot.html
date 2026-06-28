@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,9 +9,9 @@
     <link rel="stylesheet" href="../styling/navigation.css">
     <script src="https://d3js.org/d3.v7.js" defer></script>
     <script src="../scripts/parallel-coordinate-plot.js" defer></script>
-    <script src="../scripts/tutorial.js" defer></script>
     <script src="../scripts/navigation.js" defer></script>
 </head>
+
 <body>
     <div class="parallel-page">
         <header class="parallel-header">
@@ -53,6 +54,10 @@
             </aside>
 
             <section class="panel chart-panel" id="chart-panel">
+                <button class="exit-fullscreen-btn" onclick="toggleFullscreen()">
+                    <svg style="width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+                    Close Fullscreen
+                </button>
                 <div id="my_dataviz"></div>
             </section>
         </main>
@@ -75,4 +80,5 @@
         </section>
     </div>
 </body>
+
 </html>
