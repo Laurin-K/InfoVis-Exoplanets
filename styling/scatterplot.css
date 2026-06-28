@@ -250,6 +250,12 @@ body::before {
     cursor: pointer;
 }
 
+.action-btn.active {
+    background: #8fe3c7;
+    color: #050a14;
+    border-color: #8fe3c7;
+}
+
 .point:hover {
     opacity: 1;
 }
