@@ -161,20 +161,37 @@ h1 {
     accent-color: var(--accent);
 }
 
-.toggle-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+.unit-toggle-wrapper {
     margin-bottom: 18px;
     padding: 12px;
     border: 1px solid rgba(178, 207, 222, 0.16);
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.05);
-    color: var(--muted);
-    font-weight: 700;
-    letter-spacing: 0.04em;
 }
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.unit-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--muted);
+    background: rgba(0,0,0,0.3);
+    transition: all 0.3s;
+}
+
+.unit-badge.active {
+    color: #000;
+}
+
+#badge-earth.active { background: #8fe3c7; }
+#badge-jupiter.active { background: #f2c66d; }
 
 .switch {
     position: relative;
@@ -214,12 +231,62 @@ h1 {
 }
 
 input:checked + .slider {
-    border-color: rgba(143, 227, 199, 0.42);
-    background: linear-gradient(135deg, rgba(143, 227, 199, 0.5), rgba(242, 198, 109, 0.28));
+    border-color: rgba(242, 198, 109, 0.42);
+    background: linear-gradient(135deg, rgba(242, 198, 109, 0.5), rgba(242, 198, 109, 0.28));
 }
 
 input:checked + .slider::before {
     transform: translateX(24px);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    transition: background 0.2s;
+    font-size: 0.85rem;
+}
+
+.action-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.action-btn.outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.action-btn.outline:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+/* Fullscreen Chart */
+.chart-panel.fullscreen {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 10000;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 30px;
+}
+.chart-panel.fullscreen #my_dataviz {
+    flex: 1;
+    height: 100%;
+}
+.chart-panel.fullscreen svg {
+    height: 100%;
 }
 
 .dimension path,
@@ -362,4 +429,39 @@ input:checked + .slider::before {
         justify-content: center;
         width: 100%;
     }
+}
+
+/* Brush Inputs */
+.brush-inputs {
+    overflow: visible;
+}
+
+.brush-max, .brush-min {
+    width: 60px;
+    padding: 2px 4px;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(154, 178, 217, 0.3);
+    color: white;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.brush-max:focus, .brush-min:focus {
+    outline: none;
+    border-color: #8fe3c7;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Hide number input spinners for cleaner look */
+.brush-max::-webkit-outer-spin-button,
+.brush-max::-webkit-inner-spin-button,
+.brush-min::-webkit-outer-spin-button,
+.brush-min::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.brush-max[type=number],
+.brush-min[type=number] {
+    -moz-appearance: textfield;
 }
