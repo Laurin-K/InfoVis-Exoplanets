@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <script src="../scripts/scatterplot.js" defer></script>
     <script src="../scripts/navigation.js" defer></script>
 </head>
+
 <body>
     <div class="scatterplot-page">
         <div class="scatterplot-header">
@@ -37,17 +39,23 @@
                 <div id="controls"></div>
 
                 <div class="interaction-control" style="margin-top: 20px;">
-                    <label class="control-label" style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Interaction Mode</label>
+                    <label class="control-label"
+                        style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Interaction
+                        Mode</label>
                     <div class="toggle-group" style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button id="mode-pan" class="action-btn outline active" style="flex: 1;">Pan & Scroll</button>
                         <button id="mode-box" class="action-btn outline" style="flex: 1;">Box Zoom</button>
                     </div>
-                    <button id="reset-zoom" class="action-btn" style="width: 100%; margin-bottom: 20px;">Reset Zoom</button>
+                    <button id="reset-zoom" class="action-btn" style="width: 100%; margin-bottom: 20px;">Reset
+                        Zoom</button>
                 </div>
 
                 <div class="color-control">
-                    <label class="control-label" for="color-select" style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Point Color</label>
-                    <select id="color-select" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px;">
+                    <label class="control-label" for="color-select"
+                        style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Point
+                        Color</label>
+                    <select id="color-select"
+                        style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px;">
                         <option value="disc_year">Discovery Year</option>
                         <option value="sy_snum">Number of Stars</option>
                         <option value="sy_pnum">System Planet Count</option>
@@ -60,6 +68,8 @@
                 </div>
             </aside>
         </div>
-    </div>    <div id="tooltip" class="tooltip"></div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
 </body>
+
 </html>
