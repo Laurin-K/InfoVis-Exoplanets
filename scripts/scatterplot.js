@@ -437,8 +437,11 @@ function drawScatterplot() {
     d3.select(container).selectAll("*").remove();
 
     const containerWidth = container.getBoundingClientRect().width || 960;
-    const width = Math.min(1120, Math.max(320, Math.floor(containerWidth)));
-    const height = Math.max(380, Math.round(width * 0.66));
+    const width = Math.max(320, Math.floor(containerWidth));
+    
+    const maxViewHeight = Math.max(380, window.innerHeight - 250);
+    const idealHeight = Math.round(width * 0.60);
+    const height = Math.min(idealHeight, maxViewHeight);
 
     const margin = width < 640
         ? { top: 22, right: 18, bottom: 64, left: 68 }

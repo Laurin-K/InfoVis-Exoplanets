@@ -216,6 +216,8 @@ button:focus {
 #spider-chart svg {
     display: block;
     width: 100%;
+    max-width: calc(100vh - 250px);
+    margin: 0 auto;
     height: auto;
 }
 
@@ -240,6 +242,16 @@ button:focus {
 
 .radar-area {
     fill-opacity: 0.16;
+}
+
+.radar-dashed {
+    fill-opacity: 0.16;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+}
+
+.radar-solid {
+    fill: none;
     stroke-width: 2.6;
 }
 
@@ -259,11 +271,6 @@ button:focus {
 
 .metric-panel {
     margin-top: 18px;
-}
-
-.metric-panel h2 {
-    margin: 0 0 14px;
-    font-size: 1.1rem;
 }
 
 .metric-list {
