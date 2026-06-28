@@ -287,16 +287,22 @@ input:checked + .slider::before {
     display: none;
     position: absolute;
     top: 20px;
-    right: 20px;
+    left: 20px;
     z-index: 10001;
-    padding: 10px 16px;
+    padding: 8px;
     background: rgba(143, 227, 199, 0.1);
     color: #8fe3c7;
     border: 1px solid rgba(143, 227, 199, 0.4);
     border-radius: 6px;
     cursor: pointer;
-    font-weight: 600;
     transition: background 0.2s;
+    line-height: 0;
+}
+
+.exit-fullscreen-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
 }
 
 .exit-fullscreen-btn:hover {
