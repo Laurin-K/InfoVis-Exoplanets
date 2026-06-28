@@ -171,7 +171,7 @@ function polarPoint(center, radius, angle, value = 1) {
 function createSpiderSvg(planets, options = {}) {
     const size = options.size || 620;
     const center = size / 2;
-    const radius = options.radius || size * 0.34;
+    const radius = options.radius || size * 0.28;
     const labelRadius = radius + (options.mini ? 18 : 42);
     const axisCount = metrics.length;
     const gridLevels = options.mini ? 3 : 5;
@@ -203,23 +203,67 @@ function createSpiderSvg(planets, options = {}) {
     }).join("");
 
     const areas = planets.map((planet, index) => {
-        const points = metrics.map((metric, metricIndex) => {
-            const angle = startAngle + (Math.PI * 2 * metricIndex) / axisCount;
-            const value = Math.max(0, Math.min(1, normalizeValue(metric, planet[metric.key])));
-            return polarPoint(center, radius, angle, value);
-        });
         const color = options.getColor ? options.getColor(planet) : (options.color || colors[index % colors.length]);
 
-        const pointCircles = points.map((point, metricIndex) => {
+        const validPoints = [];
+        const allPoints = [];
+
+        metrics.forEach((metric, metricIndex) => {
+            const angle = startAngle + (Math.PI * 2 * metricIndex) / axisCount;
+            const rawValue = planet[metric.key];
+            const isValid = rawValue != null;
+            
+            const value = isValid ? Math.max(0, Math.min(1, normalizeValue(metric, rawValue))) : null;
+            const point = isValid ? polarPoint(center, radius, angle, value) : null;
+            
+            allPoints.push(point);
+            if (isValid) {
+                validPoints.push(point);
+            }
+        });
+
+        const pointCircles = allPoints.map((point, metricIndex) => {
+            if (!point) return "";
             const rawVal = planet[metrics[metricIndex].key];
-            const textVal = rawVal == null ? "No Data" : rawVal.toLocaleString();
+            const textVal = rawVal.toLocaleString();
             return `<circle cx="${point.x}" cy="${point.y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
                 <title>${metrics[metricIndex].label}: ${textVal} ${metrics[metricIndex].unit}</title>
             </circle>`;
         }).join("");
 
-        return `<polygon class="radar-area" points="${points.map(point => `${point.x},${point.y}`).join(" ")}" fill="${color}" stroke="${color}"></polygon>
-                ${pointCircles}`;
+        // Dashed background connects all valid points (skipping missing axes)
+        const dashedPolygon = validPoints.length > 0 ? 
+            `<polygon class="radar-dashed" points="${validPoints.map(p => `${p.x},${p.y}`).join(" ")}" fill="${color}" stroke="${color}"></polygon>` : "";
+
+        // Foreground solid lines (only connecting contiguous valid points)
+        let solidPathData = "";
+        let inSegment = false;
+        
+        allPoints.forEach((p) => {
+            if (p) {
+                if (!inSegment) {
+                    solidPathData += `M ${p.x},${p.y} `;
+                    inSegment = true;
+                } else {
+                    solidPathData += `L ${p.x},${p.y} `;
+                }
+            } else {
+                inSegment = false;
+            }
+        });
+        
+        // Loop closure logic
+        if (allPoints[allPoints.length - 1] && allPoints[0]) {
+            solidPathData += `L ${allPoints[0].x},${allPoints[0].y} `;
+        }
+        
+        const solidPath = `<path class="radar-solid" d="${solidPathData.trim()}" stroke="${color}"></path>`;
+
+        return `<g class="radar-area-group">
+                    ${dashedPolygon}
+                    ${solidPath}
+                    ${pointCircles}
+                </g>`;
     }).join("");
 
     return `
@@ -297,11 +341,14 @@ function renderSelectedPlanets() {
                 <span class="color-dot" style="background:${planet._hidden ? '#555' : colors[index]}"></span>
                 <span style="opacity: ${planet._hidden ? '0.5' : '1'}">${planet.pl_name}</span>
             </span>
-            <div>
-                <button type="button" class="eye-btn" data-toggle-index="${index}" style="background:none; border:none; color:white; cursor:pointer;" title="Toggle visibility">
-                    ${planet._hidden ? '👁️‍🗨️' : '👁️'}
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <button type="button" class="eye-btn" data-toggle-index="${index}" style="background:none; border:none; color:var(--muted); cursor:pointer; padding: 4px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;" title="Toggle visibility">
+                    ${planet._hidden ? 
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>' : 
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>'
+                    }
                 </button>
-                <button type="button" data-remove-index="${index}" style="background:none; border:none; color:#ff6b6b; cursor:pointer;" title="Remove">✕</button>
+                <button type="button" data-remove-index="${index}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; padding: 4px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; font-size: 16px; font-weight: bold;" title="Remove">✕</button>
             </div>
         </div>
     `).join("");
@@ -339,7 +386,7 @@ function renderCompareChart() {
     }
 
     const visiblePlanets = state.selected.filter(p => !p._hidden);
-    const planets = state.selected.length ? visiblePlanets : state.allPlanets.slice(0, 2);
+    const planets = visiblePlanets;
     
     chart.innerHTML = createSpiderSvg(planets, {
         getColor: (p) => {
@@ -365,15 +412,7 @@ function updateCompareView() {
 function initCompareView() {
     const search = document.querySelector("#planet-search");
 
-    // Pre-select HD 209458 b if available, otherwise first two
-    const demo1 = state.allPlanets.find(p => p.pl_name === "HD 209458 b");
-    const demo2 = state.allPlanets.find(p => p.pl_name === "Kepler-186 f");
-    
-    if (demo1 && demo2) {
-        state.selected = [demo1, demo2];
-    } else {
-        state.selected = state.allPlanets.slice(0, Math.min(2, state.allPlanets.length));
-    }
+    state.selected = [];
 
     renderMetricList();
     updateCompareView();

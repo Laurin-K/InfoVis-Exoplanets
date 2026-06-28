@@ -68,21 +68,13 @@ function createCheckboxes() {
             .property("checked", activeDimensions.includes(dim))
             .on("change", updateDimensions);
 
+        const dimName = columnExplanations[dim] ? columnExplanations[dim].name : dim;
         label.append("span")
-            .text(" " + dim);
+            .text(" " + dimName);
             
         // Setup tooltip if data is already loaded
         if (columnExplanations[dim]) {
             label.attr("title", columnExplanations[dim].name + ": " + columnExplanations[dim].desc);
-        }
-    });
-}
-
-function updateCheckboxTooltips() {
-    d3.select("#controls").selectAll("label").each(function() {
-        const input = d3.select(this).select("input").node();
-        if (input && columnExplanations[input.value]) {
-            d3.select(this).attr("title", columnExplanations[input.value].name + ": " + columnExplanations[input.value].desc);
         }
     });
 }
@@ -110,18 +102,25 @@ function initBrushes(dimensions){
 }
 
 let fullData = [];
-d3.csv("../data/nasa_export_small.csv", d => {
+let columnExplanations = {};
 
-    // convert string into int
-    activeDimensions.forEach(dim => {
-        d[dim] = d[dim] === "" ? null : +d[dim];
-    });
-
-    return d;
-
-}).then(data => {
-
+Promise.all([
+    d3.csv("../data/nasa_export_small.csv", d => {
+        // Convert all numeric strings into numbers so newly checked dimensions scale correctly
+        Object.keys(d).forEach(key => {
+            if (d[key] === "" || d[key].trim() === "") {
+                d[key] = null;
+            } else if (!isNaN(d[key])) {
+                d[key] = +d[key];
+            }
+        });
+        return d;
+    }),
+    fetch("../data/column_explanation.csv").then(response => response.text())
+]).then(([data, explanationsCsv]) => {
     fullData = data;
+    parseColumnExplanations(explanationsCsv);
+    createTableFromCSV(explanationsCsv);
 
     createCheckboxes();
     draw(activeDimensions);
@@ -150,10 +149,7 @@ function getTooltip() {
 function draw(dimensions)
 {
     d3.select("#my_dataviz").selectAll("*").remove();
-    // keep only valid datasets
-    let data = fullData.filter(d =>
-        dimensions.every(dim => d[dim] != null && !isNaN(d[dim]))
-    );
+    let data = fullData;
 
     // SVG Setup
     const container = document.querySelector("#my_dataviz");
@@ -163,7 +159,7 @@ function draw(dimensions)
     const targetWidth = Math.max(800, containerRect.width || 800);
     const targetHeight = Math.max(460, containerRect.height || 460);
 
-    const margin = { top: 30, right: 50, bottom: 60, left: 50 };
+    const margin = { top: 50, right: 80, bottom: 110, left: 80 };
     const width = targetWidth - margin.left - margin.right;
     const height = targetHeight - margin.top - margin.bottom;
 
@@ -239,8 +235,9 @@ function draw(dimensions)
         .attr("transform", d => `translate(${x(d)})`)
         .call(d3.drag()
             .filter(function(event) {
-                // Only allow dragging when clicking the label (text)
-                return event.button === 0 && event.target.tagName.toLowerCase() === 'text';
+                // Only allow dragging when clicking the label (text or tspan)
+                const tag = event.target.tagName.toLowerCase();
+                return event.button === 0 && (tag === 'text' || tag === 'tspan');
             })
             .subject(function(event, d) { return {x: x(d)}; })
             .on("start", function(event, d) {
@@ -252,13 +249,15 @@ function draw(dimensions)
                 dimensions.sort(function(a, b) { return position(a) - position(b); });
                 x.domain(dimensions);
                 g.attr("transform", function(d) { return "translate(" + position(d) + ")"; });
-                svg.selectAll(".line").attr("d", path);
+                svg.selectAll(".line-dashed").attr("d", backgroundPath);
+                svg.selectAll(".line-solid").attr("d", foregroundPath);
             })
             .on("end", function(event, d) {
                 delete dragging[d];
                 activeDimensions = [...dimensions]; // save new order
                 d3.select(this).transition().duration(500).attr("transform", "translate(" + x(d) + ")");
-                svg.selectAll(".line").transition().duration(500).attr("d", path);
+                svg.selectAll(".line-dashed").transition().duration(500).attr("d", backgroundPath);
+                svg.selectAll(".line-solid").transition().duration(500).attr("d", foregroundPath);
             })
         )
         .each(function(dim) {
@@ -270,19 +269,32 @@ function draw(dimensions)
 
     // create labels
     g.append("text")
-        .attr("y", -10)
         .style("text-anchor", "middle")
         .style("fill", "black")
         .style("cursor", "pointer")
-        .text(d => d)
+        .each(function(d) {
+            const el = d3.select(this);
+            const rawName = columnExplanations[d] ? columnExplanations[d].name : d;
+            const words = rawName.split(/\s+/);
+            
+            if (words.length > 1) {
+                const mid = Math.ceil(words.length / 2);
+                const line1 = words.slice(0, mid).join(" ");
+                const line2 = words.slice(mid).join(" ");
+                el.append("tspan").attr("x", 0).attr("y", -24).text(line1);
+                el.append("tspan").attr("x", 0).attr("y", -10).text(line2);
+            } else {
+                el.attr("y", -10).text(rawName);
+            }
+        })
         .on("mouseover", function(event, d) {
             d3.select(this)
                 .style("font-weight", "bold");
 
             const expl = columnExplanations[d];
-            let content = `<strong>${d}</strong>`;
+            let content = `<strong>${columnExplanations[d] ? columnExplanations[d].name : d}</strong>`;
             if (expl) {
-                content = `<strong>${expl.name} (${d})</strong><br/>${expl.desc}`;
+                content = `<strong>${expl.name}</strong><br/>${expl.desc}`;
             }
             getTooltip().html(content)
                 .style("visibility", "visible");
@@ -297,6 +309,27 @@ function draw(dimensions)
                 .style("font-weight", "normal");
             getTooltip().style("visibility", "hidden");
         });
+
+    const brushInputs = g.append("foreignObject")
+        .attr("x", -42)
+        .attr("y", height + 15)
+        .attr("width", 84)
+        .attr("height", 85)
+        .attr("class", "brush-inputs");
+
+    brushInputs.append("xhtml:div")
+        .style("display", "flex")
+        .style("flex-direction", "column")
+        .style("gap", "4px")
+        .html(dim => {
+            const domain = y[dim].domain();
+            const minDomain = domain[0];
+            const maxDomain = domain[1];
+            return `
+            <input type="number" class="brush-max" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Max" step="any" title="Maximum filter value" />
+            <input type="number" class="brush-min" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Min" step="any" title="Minimum filter value" />
+            <button class="reset-dim-brush" data-dim="${dim}" disabled title="Reset this filter">Reset</button>
+        `});
 
     g.append("g")
         .attr("class", "brush")
@@ -321,22 +354,6 @@ function draw(dimensions)
 
         });
 
-    const brushInputs = g.append("foreignObject")
-        .attr("x", -35)
-        .attr("y", height + 5)
-        .attr("width", 70)
-        .attr("height", 60)
-        .attr("class", "brush-inputs");
-
-    brushInputs.append("xhtml:div")
-        .style("display", "flex")
-        .style("flex-direction", "column")
-        .style("gap", "4px")
-        .html(dim => `
-            <input type="number" class="brush-max" data-dim="${dim}" placeholder="Max" step="any" title="Maximum filter value" />
-            <input type="number" class="brush-min" data-dim="${dim}" placeholder="Min" step="any" title="Minimum filter value" />
-        `);
-
     d3.selectAll(".brush-max, .brush-min").on("change", function(event) {
         // Prevent event from bubbling and causing issues
         event.stopPropagation();
@@ -346,8 +363,8 @@ function draw(dimensions)
         const maxInput = parentDiv.querySelector(".brush-max");
         const minInput = parentDiv.querySelector(".brush-min");
         
-        const maxVal = parseFloat(maxInput.value);
-        const minVal = parseFloat(minInput.value);
+        let maxVal = parseFloat(maxInput.value);
+        let minVal = parseFloat(minInput.value);
 
         const brushGroup = svg.selectAll(".dimension")
             .filter(d => d === dim)
@@ -363,6 +380,18 @@ function draw(dimensions)
             const maxDomain = scale.domain()[1];
             const minDomain = scale.domain()[0];
             
+            // Clamp values to the scale's domain to prevent brushes from going out of view
+            if (!isNaN(maxVal)) {
+                if (maxVal > maxDomain) maxVal = maxDomain;
+                if (maxVal < minDomain) maxVal = minDomain;
+                maxInput.value = maxVal;
+            }
+            if (!isNaN(minVal)) {
+                if (minVal > maxDomain) minVal = maxDomain;
+                if (minVal < minDomain) minVal = minDomain;
+                minInput.value = minVal;
+            }
+
             const effectiveMax = isNaN(maxVal) ? maxDomain : maxVal;
             const effectiveMin = isNaN(minVal) ? minDomain : minVal;
             
@@ -372,6 +401,20 @@ function draw(dimensions)
             d3.select(brushGroup).call(brushGroup.__brush.move, [Math.min(y0, y1), Math.max(y0, y1)]);
         }
     });
+
+    d3.selectAll(".reset-dim-brush").on("click", function(event) {
+        event.stopPropagation();
+        const dim = this.dataset.dim;
+        const brushGroup = svg.selectAll(".dimension")
+            .filter(d => d === dim)
+            .select(".brush")
+            .node();
+        
+        if (brushGroup && brushGroup.__brush) {
+            d3.select(brushGroup).call(brushGroup.__brush.move, null);
+        }
+    });
+
     const line = d3.line();
 
     function brushed(event, dim, brushNode) {
@@ -379,11 +422,13 @@ function draw(dimensions)
         const dimGroup = brushNode.parentNode;
         const maxInput = dimGroup.querySelector(".brush-max");
         const minInput = dimGroup.querySelector(".brush-min");
+        const resetBtn = dimGroup.querySelector(".reset-dim-brush");
 
         if (!event.selection) {
             brushes[dim] = null;
             if (maxInput && document.activeElement !== maxInput) maxInput.value = "";
             if (minInput && document.activeElement !== minInput) minInput.value = "";
+            if (resetBtn) resetBtn.disabled = true;
             updateLines();
             return;
         }
@@ -404,64 +449,103 @@ function draw(dimensions)
         if (minInput && document.activeElement !== minInput) {
             minInput.value = +min.toFixed(3);
         }
+        if (resetBtn) resetBtn.disabled = false;
 
         updateLines();
     }
 
     function updateLines() {
-
-        svg.selectAll(".line")
+        svg.selectAll(".line-group")
             .style("display", function(d) {
-
                 return dimensions.every(dim => {
-
                     if (!brushes[dim]) return true;
 
                     const value = d[dim];
+                    if (value == null) return false; // Hide if missing on brushed axis
+
                     const [min, max] = brushes[dim];
-
                     return value >= min && value <= max;
-
                 }) ? null : "none";
-
             });
     }
-    function path(d) {
-        return line(dimensions.map(dim => [
-            position(dim),
-            y[dim](d[dim])
-        ]));
+
+    const foregroundLine = d3.line().defined(d => d !== null);
+    function foregroundPath(d) {
+        return foregroundLine(dimensions.map(dim => {
+            if (d[dim] != null) return [position(dim), y[dim](d[dim])];
+            return null;
+        }));
+    }
+
+    const dashedLine = d3.line();
+    function backgroundPath(d) {
+        let points = [];
+        let firstValidY = null;
+        let lastValidY = null;
+        
+        dimensions.forEach((dim) => {
+            if (d[dim] != null) {
+                let yPos = y[dim](d[dim]);
+                if (firstValidY === null) firstValidY = yPos;
+                lastValidY = yPos;
+                points.push([position(dim), yPos]);
+            }
+        });
+
+        if (points.length === 0) return "";
+
+        if (d[dimensions[0]] == null) {
+            points.unshift([position(dimensions[0]), firstValidY]);
+        }
+        if (d[dimensions[dimensions.length - 1]] == null) {
+            points.push([position(dimensions[dimensions.length - 1]), lastValidY]);
+        }
+
+        return dashedLine(points);
     }
 
     var color = d3.scaleOrdinal()
         .domain(["1", "2", "3", "4", "5"])
-        .range([ "#440154ff", "#21908dff", "#fde725ff", "#123456ff", "#abcdefff"])
+        .range([ "#440154ff", "#21908dff", "#fde725ff", "#123456ff", "#abcdefff"]);
 
-    const paths = svg.selectAll(".line")
+    const lineGroups = svg.selectAll(".line-group")
         .data(data)
         .enter()
-        .append("path")
-        .attr("class", "line")
-        .attr("d", path)
-        .style("fill", "none")
-        .style("stroke", function(d){ return( color(d.sy_snum))})
-        .style("opacity", 0.8)
+        .append("g")
+        .attr("class", "line-group")
         .on("click", function(event, d) {
             event.stopPropagation();
             selectDataline(d);
         });
 
+    lineGroups.append("path")
+        .attr("class", "line-dashed")
+        .attr("d", backgroundPath)
+        .style("fill", "none")
+        .style("stroke", d => color(d.sy_snum))
+        .style("stroke-dasharray", "4 4")
+        .style("opacity", 0.4);
+
+    lineGroups.append("path")
+        .attr("class", "line-solid")
+        .attr("d", foregroundPath)
+        .style("fill", "none")
+        .style("stroke", d => color(d.sy_snum));
+
     // If a planet was already selected, re-apply the visual classes to the new paths
     if (selectedPlanet) {
         const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
         if (exists) {
-            paths.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
-                 .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
+            lineGroups.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
+                      .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
         } else {
             clearInfocard();
             selectedPlanet = null;
         }
     }
+
+    // Apply any existing brushes to the newly created lines
+    updateLines();
 }
 
 //Single planet selection
@@ -470,7 +554,7 @@ let selectedPlanet = null;
 function selectDataline(d) {
     selectedPlanet = d;
 
-    d3.selectAll(".line")
+    d3.selectAll(".line-group")
         .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
         .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
 
@@ -480,7 +564,7 @@ function selectDataline(d) {
 function deselectAllDatalines() {
     selectedPlanet = null;
 
-    d3.selectAll(".line")
+    d3.selectAll(".line-group")
         .classed("selected", false)
         .classed("dimmed", false);
 
@@ -540,14 +624,6 @@ function clearInfocard() {
 }
 
 //Table for column explanation
-let columnExplanations = {};
-
-fetch("../data/column_explanation.csv")
-    .then(response => response.text())
-    .then(data => {
-        parseColumnExplanations(data);
-        createTableFromCSV(data);
-    });
 
 function parseColumnExplanations(csv) {
     const lines = csv.split(/\r?\n/);
@@ -564,25 +640,29 @@ function parseColumnExplanations(csv) {
 }
 
 function createTableFromCSV(csv) {
-    const rows = csv.split("\n").map(row => row.split(";"));
+    const rows = csv.split(/\r?\n/).map(row => row.split(";")).filter(row => row.length >= 3);
 
     const tableHead = document.querySelector("#dataTable thead");
     const tableBody = document.querySelector("#dataTable tbody");
 
-    // Header
+    // Clear existing content
+    tableHead.innerHTML = "";
+    tableBody.innerHTML = "";
+
+    // Header (skip first column)
     const headerRow = document.createElement("tr");
-    rows[0].forEach(cell => {
+    rows[0].slice(1).forEach(cell => {
         const th = document.createElement("th");
         th.textContent = cell;
         headerRow.appendChild(th);
     });
     tableHead.appendChild(headerRow);
 
-    // Daten
+    // Daten (skip first column)
     rows.slice(1).forEach(row => {
         const tr = document.createElement("tr");
 
-        row.forEach(cell => {
+        row.slice(1).forEach(cell => {
             const td = document.createElement("td");
             td.textContent = cell;
             tr.appendChild(td);
@@ -590,8 +670,6 @@ function createTableFromCSV(csv) {
 
         tableBody.appendChild(tr);
     });
-    // Now that explanations are loaded, update tooltips
-    updateCheckboxTooltips();
 }
 
 function resetBrushing() {
@@ -599,6 +677,7 @@ function resetBrushing() {
         brushes[dim] = null;
     }
     d3.selectAll(".brush").call(d3.brushY().move, null);
+    d3.selectAll(".brush-max, .brush-min").property("value", "");
     d3.selectAll(".line").style("display", null);
 }
 

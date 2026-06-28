@@ -30,11 +30,6 @@
         </div>
 
         <div class="scatterplot-layout">
-            <section class="panel plot-panel">
-                <div id="my_dataviz"></div>
-                <div id="plot-note" class="plot-note">Loading NASA export data and glossary...</div>
-            </section>
-
             <aside class="panel control-panel">
                 <div id="controls"></div>
 
@@ -67,7 +62,21 @@
                     <!-- populated by JS -->
                 </div>
             </aside>
+
+            <section class="panel plot-panel">
+                <div id="my_dataviz"></div>
+                <div id="plot-note" class="plot-note">Loading NASA export data and glossary...</div>
+            </section>
         </div>
+        
+        <section class="panel column-explanation">
+            <h2>Data Fields & Definitions</h2>
+            <p>The following columns from the NASA exoplanet archive are used in this plot.</p>
+            <table id="dataTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </section>
     </div>
     <div id="tooltip" class="tooltip"></div>
 </body>

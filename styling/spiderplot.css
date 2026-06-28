@@ -38,10 +38,10 @@ body::before {
 }
 
 .spider-page {
-    position: relative;
-    width: min(1240px, calc(100vw - 32px));
-    margin: 0 auto;
-    padding: 28px 0 42px;
+  position: relative;
+  width: min(1920px, 96vw);
+  margin: 0 auto;
+  padding: 28px 0 42px;
 }
 
 .spider-header {
@@ -97,7 +97,7 @@ h1 {
 
 .compare-layout {
     display: grid;
-    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
     gap: 18px;
     align-items: start;
 }
@@ -216,6 +216,8 @@ button:focus {
 #spider-chart svg {
     display: block;
     width: 100%;
+    max-width: calc(100vh - 250px);
+    margin: 0 auto;
     height: auto;
 }
 
@@ -240,6 +242,16 @@ button:focus {
 
 .radar-area {
     fill-opacity: 0.16;
+}
+
+.radar-dashed {
+    fill-opacity: 0.16;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+}
+
+.radar-solid {
+    fill: none;
     stroke-width: 2.6;
 }
 
@@ -259,11 +271,6 @@ button:focus {
 
 .metric-panel {
     margin-top: 18px;
-}
-
-.metric-panel h2 {
-    margin: 0 0 14px;
-    font-size: 1.1rem;
 }
 
 .metric-list {
@@ -360,7 +367,7 @@ button:focus {
 
 @media (max-width: 560px) {
     .spider-page {
-        width: min(100vw - 20px, 1240px);
+        width: min(100vw - 20px, 1600px);
         padding-top: 18px;
     }
 

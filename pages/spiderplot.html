@@ -32,7 +32,12 @@
                 <datalist id="planet-datalist"></datalist>
 
                 <p id="selection-note" class="note">Choose 1 to 4 planets. Selecting from search adds it.</p>
-                <div id="selected-planets" class="selected-planets"></div>
+                <div id="selected-planets" class="selected-planets" style="margin-bottom: 24px;"></div>
+                
+                <hr style="border: none; border-top: 1px solid rgba(178,207,222,0.18); margin: 0 0 16px 0;">
+                
+                <h2 style="margin: 0 0 14px; font-size: 1.1rem;">Compared Metrics</h2>
+                <div id="metric-list" class="metric-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </aside>
 
             <section class="panel chart-panel">
@@ -40,11 +45,6 @@
                 <div id="spider-legend" class="legend"></div>
             </section>
         </main>
-
-        <section class="panel metric-panel">
-            <h2>Compared Metrics</h2>
-            <div id="metric-list" class="metric-list"></div>
-        </section>
     </div>
 </body>
 
