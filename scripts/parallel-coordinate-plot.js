@@ -231,6 +231,10 @@ function draw(dimensions)
         .attr("class", "dimension")
         .attr("transform", d => `translate(${x(d)})`)
         .call(d3.drag()
+            .filter(function(event) {
+                // Only allow dragging when clicking the label (text)
+                return event.button === 0 && event.target.tagName.toLowerCase() === 'text';
+            })
             .subject(function(event, d) { return {x: x(d)}; })
             .on("start", function(event, d) {
                 dragging[d] = x(d);
