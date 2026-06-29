@@ -1,5 +1,6 @@
 # InfoVis-Exoplanets
-Parallel corrdinate plot for exoplanet data.
+Visualization using multivariate plots for exoplanet data.
+The visualizations help users explore the data for easier comparison of different planets as well as or spotting patterns that are not visible from raw data tables. 
 
 Visualizations are made with [D3.js](https://d3js.org/)
 
@@ -8,36 +9,3 @@ Utilises public available data from NASA.
 ### Important links: 
 - [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=PS)
 - [Archive Documentation](https://exoplanetarchive.ipac.caltech.edu/docs/API_PS_columns.html)
-
-## General
-Insights fehlen
-Experten anfragen ist ein must do. 
-Visualisierung für Experten neu. Die können dann sagen was die rausnehmen können.
-Was wäre ein Use Case für die Experten in dem Sie die von uns angebotene Lösung verwenden können?
-Doktoranten? Professoren? Forscher?
-Was machen wir mit unvollständigen Datensätzen??
-
-Unvollständige Datenlinien gestrichelt?
-Vollständigkeit der menge der befüllten Daten pro spalte anzeigen (90% oder 1780/3500??)
-
-## PCP:
-- full screen toggle für das chart?. bewegt die "visible dimensions" und den text nach unten, damit das chart besser erkundet werden kann
-- PCA als toggle. User kann dimensionen zusammenführen oder von uns vorgegeben?
-
-## Scatterplot Matrix
-- hinzufügen
-- selection rückt scatterplot in den fokus
-- 
-## Spiderplot:
-- bessere lösung für 0 werte
-- dimensionen auswählbar 
-
-# Spiderplot Gallery
-- Achsen mit aufnehmen, welche werte werden überhaupt gezeigt?
-- Achsen auswählbar machen
-- Cluster von plots automatisiert sortien?
-- Selection toggle für (überlappenden) vergleich
-- Filtern!!
-- 
-## mulitple coordinated views
-- ansehen und evaluieren ob hinzufügen
