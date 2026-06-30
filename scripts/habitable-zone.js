@@ -118,10 +118,21 @@ function onPlanetSelect(planetName) {
     const l_sun = Math.pow(state.selectedPlanet.rad, 2) * Math.pow(state.selectedPlanet.teff / 5778, 4);
     const outerHz = Math.sqrt(l_sun / 0.53);
     
-    state.maxAu = Math.max(state.selectedPlanet.orbsmax * 1.5, outerHz * 1.5);
+    let maxAu = Math.max(state.selectedPlanet.orbsmax * 1.5, outerHz * 1.5);
     // Add a minimum scale so very close planets don't zoom in too crazily
-    if (state.maxAu < 0.1) state.maxAu = 0.1; 
+    if (maxAu < 0.1) maxAu = 0.1; 
     
+    const R_max = Math.min(cx, cy) * 0.9;
+    const starVisualRadius = Math.max(10, Math.min(80, state.selectedPlanet.rad * 20));
+    
+    // Ensure the planet's orbit is drawn outside the star visually
+    const minRequiredPx = starVisualRadius + 15;
+    const currentPx = (state.selectedPlanet.orbsmax / maxAu) * R_max;
+    if (currentPx < minRequiredPx) {
+        maxAu = (state.selectedPlanet.orbsmax * R_max) / minRequiredPx;
+    }
+    
+    state.maxAu = maxAu;
     scaleAu.domain([0, state.maxAu]);
 
     updateVisualization();

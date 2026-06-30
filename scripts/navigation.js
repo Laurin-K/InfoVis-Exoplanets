@@ -25,8 +25,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 <a href="${pagesPath}scatterplot.html" class="nav-link" data-path="scatterplot.html">Scatterplot</a>
 
-
-            </div>
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">Interactive Labs</button>
+                    <div class="nav-dropdown-content">
+                        <a href="${pagesPath}habitable-zone.html" class="nav-link" data-path="habitable-zone.html">Habitable Zone</a>
+                        <a href="${pagesPath}gravity-drop.html" class="nav-link" data-path="gravity-drop.html">Gravity Drop</a>
+                        <a href="${pagesPath}transit-lab.html" class="nav-link" data-path="transit-lab.html">Transit Lab</a>
+                    </div>
+                </div>            </div>
 
             <div class="nav-actions">
                 <button class="nav-tutorial-btn" onclick="if(window.openTutorial) { window.openTutorial(); } else { alert('Tutorial only available on Home screen for now.'); }">Tutorial & Help</button>
