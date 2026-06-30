@@ -30,6 +30,12 @@ const svg = d3
   .append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`);
 
+svg.append("defs").append("clipPath")
+  .attr("id", "clip")
+  .append("rect")
+  .attr("width", width)
+  .attr("height", height);
+
 const xScale = d3.scaleLinear().domain([0, 1]).range([0, width]);
 const yScale = d3.scaleLinear().domain([0.95, 1.01]).range([height, 0]);
 
@@ -64,13 +70,13 @@ svg
   .style("text-anchor", "middle")
   .text("Relative Flux");
 
-const linePath = svg.append("path").attr("class", "line");
+const linePath = svg.append("path").attr("class", "line").attr("clip-path", "url(#clip)");
 const indicatorLine = svg
   .append("line")
   .attr("class", "indicator")
   .attr("y1", 0)
   .attr("y2", height);
-const indicatorDot = svg.append("circle").attr("r", 5).style("fill", "white");
+const indicatorDot = svg.append("circle").attr("r", 5).style("fill", "white").attr("clip-path", "url(#clip)");
 
 // Load Data
 d3.csv("../data/nasa_export_small.csv", (d) => {
@@ -133,6 +139,17 @@ function onPlanetSelect(planetName) {
   pradSlider.property("value", state.simPrad);
   pradDisplay.text(state.simPrad.toFixed(1));
 
+  // Determine a suitable fixed Y axis for this planet
+  const rp_rs = state.selectedPlanet.prad / (state.selectedPlanet.srad * 109);
+  const baseDepth = Math.pow(rp_rs, 2);
+  
+  // Give some room below for adjustments (e.g. 5x initial depth)
+  let minFlux = 1.0 - baseDepth * 5;
+  if (minFlux > 0.99) minFlux = 0.99; // Fallback for very small planets
+  
+  yScale.domain([minFlux, 1.002]);
+  yAxis.call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".4f")));
+
   updateSimulation();
 }
 
@@ -180,10 +197,7 @@ function updateSimulation() {
     curveData.push({ x: t, y: flux });
   }
 
-  // Update Y scale to fit depth
-  const minFlux = 1.0 - depth * 1.5;
-  yScale.domain([minFlux < 0.9 ? minFlux : 0.99, 1.002]);
-  yAxis.call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".4f")));
+  // Y scale is now fixed in onPlanetSelect, so we don't update it here
 
   const lineGen = d3
     .line()
