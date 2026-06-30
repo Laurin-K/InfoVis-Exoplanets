@@ -241,8 +241,12 @@ function updateVisualization() {
         .text(p.name);
         
     // Simple continuous rotation animation
-    planetLayer.interrupt();
-    animateOrbit(planetLayer, p.orbper);
+    if (planetLayer.attr("data-planet") !== p.name) {
+        planetLayer.interrupt();
+        planetLayer.attr("transform", "rotate(0)");
+        animateOrbit(planetLayer, p.orbper);
+        planetLayer.attr("data-planet", p.name);
+    }
 }
 
 function animateOrbit(element, periodDays) {

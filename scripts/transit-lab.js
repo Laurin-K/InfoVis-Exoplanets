@@ -106,6 +106,7 @@ function onPlanetSelect(planetName) {
 }
 
 let animFrame;
+let startTime = null;
 
 function updateSimulation() {
     cancelAnimationFrame(animFrame);
@@ -161,7 +162,6 @@ function updateSimulation() {
     linePath.datum(curveData).attr("d", lineGen);
 
     // Start Animation loop
-    let startTime = null;
     const duration = 5000; // 5 seconds per orbit
 
     function animate(timestamp) {
