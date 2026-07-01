@@ -196,11 +196,53 @@ function createSpiderSvg(planets, options = {}) {
             return `<line class="radar-axis" x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}"></line>`;
         }
 
+        const [min, max] = state.domains.get(metric.key) || [0, 1];
+        
+        // Skip fraction 0 to avoid overlapping at the center.
+        const allLevels = Array.from({ length: gridLevels }, (_, level) => (level + 1) / gridLevels);
+        
+        const axisValuesHtml = allLevels.map((fraction) => {
+            const pos = polarPoint(center, radius, angle, fraction);
+            
+            let val;
+            if (metric.scale === "log" && min > 0 && max > 0) {
+                val = Math.exp(Math.log(min) + fraction * (Math.log(max) - Math.log(min)));
+            } else {
+                val = min + fraction * (max - min);
+            }
+            
+            let valText;
+            if (val >= 1000) {
+                valText = Math.round(val).toLocaleString();
+            } else if (val >= 10) {
+                valText = Number(val.toFixed(1)).toLocaleString();
+            } else {
+                valText = Number(val.toFixed(3)).toLocaleString();
+            }
+            
+            let textAnchor = pos.x >= center - 1 ? "start" : "end";
+            let dx = pos.x >= center - 1 ? 4 : -4;
+            let dy = -4;
+
+            return `<text class="radar-axis-value" x="${pos.x}" y="${pos.y}" text-anchor="${textAnchor}" dx="${dx}" dy="${dy}">${valText}</text>`;
+        }).join("");
+
+        const minText = min >= 1000 ? Math.round(min).toLocaleString() : min >= 10 ? Number(min.toFixed(1)).toLocaleString() : Number(min.toFixed(3)).toLocaleString();
+        const maxText = max >= 1000 ? Math.round(max).toLocaleString() : max >= 10 ? Number(max.toFixed(1)).toLocaleString() : Number(max.toFixed(3)).toLocaleString();
+        const subtitle = !options.mini ? `<text class="radar-subtitle" x="${label.x}" y="${label.y + 14}" text-anchor="${anchor}">[${minText} - ${maxText} ${metric.unit}]</text>` : "";
+
         return `
-            <line class="radar-axis" x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}"></line>
-            <text class="radar-label" x="${label.x}" y="${label.y}" text-anchor="${anchor}">${metric.label}</text>
+            <g class="radar-axis-group">
+                <line class="radar-axis-hover" x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}"></line>
+                <line class="radar-axis" x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}"></line>
+                ${axisValuesHtml}
+                <text class="radar-label" x="${label.x}" y="${label.y}" text-anchor="${anchor}">${metric.label}</text>
+                ${subtitle}
+            </g>
         `;
     }).join("");
+
+    let allPointCirclesHtml = "";
 
     const areas = planets.map((planet, index) => {
         const color = options.getColor ? options.getColor(planet) : (options.color || colors[index % colors.length]);
@@ -230,6 +272,7 @@ function createSpiderSvg(planets, options = {}) {
                 <title>${metrics[metricIndex].label}: ${textVal} ${metrics[metricIndex].unit}</title>
             </circle>`;
         }).join("");
+        allPointCirclesHtml += pointCircles;
 
         // Dashed background connects all valid points (skipping missing axes)
         const dashedPolygon = validPoints.length > 0 ? 
@@ -262,15 +305,17 @@ function createSpiderSvg(planets, options = {}) {
         return `<g class="radar-area-group">
                     ${dashedPolygon}
                     ${solidPath}
-                    ${pointCircles}
                 </g>`;
     }).join("");
 
     return `
         <svg viewBox="0 0 ${size} ${size}" role="img" aria-label="Spiderplot">
             ${polygons}
-            ${axes}
             ${areas}
+            ${axes}
+            <g class="radar-points">
+                ${allPointCirclesHtml}
+            </g>
         </svg>
     `;
 }
@@ -411,6 +456,8 @@ function updateCompareView() {
 
 function initCompareView() {
     const search = document.querySelector("#planet-search");
+    const toggleValues = document.querySelector("#toggle-axis-values");
+    const chartPanel = document.querySelector(".chart-panel");
 
     state.selected = [];
 
@@ -418,6 +465,16 @@ function initCompareView() {
     updateCompareView();
 
     search.addEventListener("input", updateCompareView);
+    
+    if (toggleValues && chartPanel) {
+        toggleValues.addEventListener("change", (e) => {
+            if (e.target.checked) {
+                chartPanel.classList.add("show-axis-values");
+            } else {
+                chartPanel.classList.remove("show-axis-values");
+            }
+        });
+    }
 }
 
 function renderGallery(query = "") {
