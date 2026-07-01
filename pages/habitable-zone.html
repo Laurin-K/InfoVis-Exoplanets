@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Habitable Zone Explorer</title>
+    <link rel="stylesheet" href="../styling/habitable-zone.css">
+    <link rel="stylesheet" href="../styling/navigation.css">
+    <script src="https://d3js.org/d3.v7.js"></script>
+    <script src="../scripts/navigation.js" defer></script>
+</head>
+
+<body>
+    <div class="page-container">
+        <header class="header">
+            <div class="eyebrow">Interactive Simulation</div>
+            <h1>Habitable Zone Explorer</h1>
+            <p class="subtitle">Discover where liquid water could exist. The "Goldilocks Zone" is calculated based on
+                the star's temperature and radius. Select a planet to see its orbit!</p>
+        </header>
+
+        <div class="main-layout">
+            <aside class="control-panel panel">
+                <div class="control-block">
+                    <label for="planet-select">Select a System / Planet</label>
+                    <select id="planet-select">
+                        <option value="">Loading planets...</option>
+                    </select>
+                </div>
+
+                <div id="system-info" class="info-block" style="display: none;">
+                    <h3>System Data</h3>
+                    <div class="info-row"><span>Star Temp:</span> <strong id="val-teff"></strong></div>
+                    <div class="info-row"><span>Star Radius:</span> <strong id="val-rad"></strong></div>
+                    <div class="info-row"><span>Planet Orbit:</span> <strong id="val-orb"></strong></div>
+                </div>
+
+                <div class="control-block interactive-slider">
+                    <label for="temp-slider">Experiment: Adjust Stellar Temp</label>
+                    <input type="range" id="temp-slider" min="2000" max="10000" step="50" value="5000">
+                    <div class="slider-val"><span id="temp-display">5000</span> K</div>
+                    <p class="note">Watch how the habitable zone shifts when the star gets hotter or cooler.</p>
+                    <button id="reset-btn" class="primary-button">Reset to Actual</button>
+                </div>
+
+                <div id="status-card" class="status-card">
+                    <h4 id="status-title">Status</h4>
+                    <p id="status-desc">-</p>
+                </div>
+            </aside>
+
+            <main class="viz-panel panel">
+                <div id="hz-dataviz"></div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../scripts/habitable-zone.js"></script>
+</body>
+
+</html>

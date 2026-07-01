@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Gravity Drop Simulator</title>
+    <link rel="stylesheet" href="../styling/gravity-drop.css">
+    <link rel="stylesheet" href="../styling/navigation.css">
+    <script src="https://d3js.org/d3.v7.js"></script>
+    <script src="../scripts/navigation.js" defer></script>
+</head>
+
+<body>
+    <div class="page-container">
+        <header class="header">
+            <div class="eyebrow">Interactive Physics</div>
+            <h1>Gravity Drop Simulator</h1>
+            <p class="subtitle">Experience how strong gravity is on different exoplanets. Select a planet and drop the
+                probe to see how fast it falls compared to Earth.</p>
+        </header>
+
+        <div class="main-layout">
+            <aside class="control-panel panel">
+                <div class="control-block">
+                    <label for="planet-select">Select a Planet</label>
+                    <select id="planet-select">
+                        <option value="">Loading planets...</option>
+                    </select>
+                </div>
+
+                <div id="system-info" class="info-block" style="display: none;">
+                    <h3>Planet Data</h3>
+                    <div class="info-row"><span>Mass:</span> <strong id="val-mass"></strong></div>
+                    <div class="info-row"><span>Radius:</span> <strong id="val-rad"></strong></div>
+                    <div class="info-row"><span>Surface Gravity:</span> <strong id="val-grav"
+                            class="highlight"></strong></div>
+                </div>
+
+                <div class="control-block">
+                    <button id="drop-btn" class="primary-button">Drop Probe</button>
+                    <button id="reset-btn" class="secondary-button">Reset</button>
+                </div>
+
+                <div class="planet-preview">
+                    <h4>Relative Size</h4>
+                    <div id="size-compare"></div>
+                </div>
+            </aside>
+
+            <main class="viz-panel panel">
+                <div class="drop-zones">
+                    <div class="drop-zone" id="zone-earth">
+                        <h3>Earth <span class="sub">(1g)</span></h3>
+                        <div class="shaft">
+                            <div class="probe earth-probe" id="probe-earth"></div>
+                            <div class="ruler"></div>
+                        </div>
+                        <div class="surface surface-earth"></div>
+                        <div class="timer" id="timer-earth">0.00s</div>
+                    </div>
+
+                    <div class="drop-zone" id="zone-exo">
+                        <h3 id="exo-title">Exoplanet</h3>
+                        <div class="shaft">
+                            <div class="probe exo-probe" id="probe-exo"></div>
+                            <div class="ruler"></div>
+                        </div>
+                        <div class="surface surface-exo"></div>
+                        <div class="timer" id="timer-exo">0.00s</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../scripts/gravity-drop.js"></script>
+</body>
+
+</html>

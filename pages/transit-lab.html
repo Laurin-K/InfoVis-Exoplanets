@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Transit Light Curve Lab</title>
+    <link rel="stylesheet" href="../styling/transit-lab.css">
+    <link rel="stylesheet" href="../styling/navigation.css">
+    <script src="https://d3js.org/d3.v7.js"></script>
+    <script src="../scripts/navigation.js" defer></script>
+</head>
+
+<body>
+    <div class="page-container">
+        <header class="header">
+            <div class="eyebrow">Interactive Discovery</div>
+            <h1>Transit Light Curve Lab</h1>
+            <p class="subtitle">See how astronomers discover planets. When a planet passes in front of its star, it
+                blocks a tiny fraction of the light. Watch the light curve dip as the planet transits!</p>
+        </header>
+
+        <div class="main-layout">
+            <aside class="control-panel panel">
+                <div class="control-block">
+                    <label for="planet-select">Select a Transiting Planet</label>
+                    <select id="planet-select">
+                        <option value="">Loading planets...</option>
+                    </select>
+                </div>
+
+                <div id="system-info" class="info-block" style="display: none;">
+                    <h3>Transit Data</h3>
+                    <div class="info-row"><span>Planet Radius:</span> <strong id="val-prad"></strong></div>
+                    <div class="info-row"><span>Star Radius:</span> <strong id="val-srad"></strong></div>
+                    <div class="info-row"><span>Transit Depth:</span> <strong id="val-depth" class="highlight"></strong>
+                    </div>
+                </div>
+
+                <div class="control-block interactive-slider">
+                    <label for="prad-slider">Experiment: Planet Radius (<span id="prad-display">1.0</span>
+                        R_earth)</label>
+                    <input type="range" id="prad-slider" min="0.5" max="25" step="0.5" value="1.0">
+                    <p class="note">Increase the size of the planet to see how it affects the light curve depth.</p>
+                    <button id="reset-btn" class="primary-button">Reset to Actual Size</button>
+                </div>
+            </aside>
+
+            <main class="viz-panel panel">
+                <div class="transit-container">
+                    <!-- Top: 2D Animation -->
+                    <div class="transit-view" id="transit-view">
+                        <div class="star" id="t-star"></div>
+                        <div class="planet" id="t-planet"></div>
+                    </div>
+                    <!-- Bottom: D3 Line Chart -->
+                    <div class="lightcurve-view" id="lightcurve-view"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../scripts/transit-lab.js"></script>
+</body>
+
+</html>
