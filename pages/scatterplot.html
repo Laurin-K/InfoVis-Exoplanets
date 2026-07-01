@@ -38,11 +38,13 @@
                         style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Interaction
                         Mode</label>
                     <div class="toggle-group" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button id="mode-pan" class="action-btn outline active" style="flex: 1;">Pan & Scroll</button>
-                        <button id="mode-box" class="action-btn outline" style="flex: 1;">Box Zoom</button>
+                        <button id="mode-pan" class="action-btn outline active" style="flex: 1;" title="Drag to pan, scroll to zoom">Pan & Scroll</button>
+                        <button id="mode-box" class="action-btn outline" style="flex: 1;" title="Drag a selection to zoom">Box Zoom</button>
                     </div>
-                    <button id="reset-zoom" class="action-btn" style="width: 100%; margin-bottom: 20px;">Reset
-                        Zoom</button>
+                    <p class="control-copy" style="font-size: 12px; opacity: 0.8; line-height: 1.4;">
+                        <strong>Pan & Scroll:</strong> Drag to pan. Scroll or double-click to zoom.<br>
+                        <strong>Box Zoom:</strong> Drag a rectangle to zoom into that area.
+                    </p>
                 </div>
 
                 <div class="color-control">
@@ -56,6 +58,8 @@
                         <option value="sy_pnum">System Planet Count</option>
                         <option value="pl_eqt">Equilibrium Temp (K)</option>
                     </select>
+                    
+                    <button id="reset-zoom" class="action-btn" style="width: 100%; margin-bottom: 20px;">Reset Zoom</button>
                 </div>
 
                 <div class="legend" id="dynamic-legend">
