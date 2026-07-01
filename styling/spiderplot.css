@@ -312,6 +312,89 @@ button:focus {
     background: rgba(255, 255, 255, 0.05);
 }
 
+.axis-note {
+    margin: 0 0 12px;
+    font-size: 0.86rem;
+}
+
+.axis-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    cursor: grab;
+    transition: border-color 0.18s ease, opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.axis-card:active {
+    cursor: grabbing;
+}
+
+.axis-card.is-hidden {
+    opacity: 0.52;
+}
+
+.axis-card.is-dragging {
+    opacity: 0.36;
+}
+
+.axis-card.is-drop-target {
+    border-color: rgba(143, 227, 199, 0.62);
+    background: rgba(143, 227, 199, 0.1);
+    transform: translateY(-1px);
+}
+
+.axis-toggle {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.axis-toggle input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--accent);
+    flex: 0 0 auto;
+}
+
+.axis-toggle > span {
+    min-width: 0;
+}
+
+.axis-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.axis-actions button {
+    width: auto;
+    min-width: 42px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.axis-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.32;
+}
+
+.drag-handle {
+    padding: 6px 8px;
+    border: 1px solid rgba(178, 207, 222, 0.18);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    user-select: none;
+}
+
 .metric-card strong {
     display: block;
 }

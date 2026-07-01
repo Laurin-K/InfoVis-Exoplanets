@@ -26,8 +26,20 @@ const state = {
     allPlanets: [],
     visiblePlanets: [],
     selected: [],
-    domains: new Map()
+    domains: new Map(),
+    metricOrder: metrics.map(metric => metric.key),
+    hiddenMetricKeys: new Set()
 };
+
+function getMetricsByOrder() {
+    return state.metricOrder
+        .map(key => metrics.find(metric => metric.key === key))
+        .filter(Boolean);
+}
+
+function getVisibleMetrics() {
+    return getMetricsByOrder().filter(metric => !state.hiddenMetricKeys.has(metric.key));
+}
 
 function parseDelimited(text, delimiter) {
     const rows = [];
@@ -173,20 +185,25 @@ function createSpiderSvg(planets, options = {}) {
     const center = size / 2;
     const radius = options.radius || size * 0.28;
     const labelRadius = radius + (options.mini ? 18 : 42);
-    const axisCount = metrics.length;
+    const chartMetrics = options.metrics || metrics;
+    const axisCount = chartMetrics.length;
     const gridLevels = options.mini ? 3 : 5;
     const startAngle = -Math.PI / 2;
 
+    if (!axisCount) {
+        return `<div class="empty-state">No axes selected. Turn on at least one metric to draw the spiderplot.</div>`;
+    }
+
     const polygons = Array.from({ length: gridLevels }, (_, level) => {
         const value = (level + 1) / gridLevels;
-        const points = metrics.map((_, index) => {
+        const points = chartMetrics.map((_, index) => {
             const angle = startAngle + (Math.PI * 2 * index) / axisCount;
             return polarPoint(center, radius, angle, value);
         });
         return `<polygon class="radar-grid" points="${points.map(point => `${point.x},${point.y}`).join(" ")}"></polygon>`;
     }).join("");
 
-    const axes = metrics.map((metric, index) => {
+    const axes = chartMetrics.map((metric, index) => {
         const angle = startAngle + (Math.PI * 2 * index) / axisCount;
         const end = polarPoint(center, radius, angle);
         const label = polarPoint(center, labelRadius, angle);
@@ -250,7 +267,7 @@ function createSpiderSvg(planets, options = {}) {
         const validPoints = [];
         const allPoints = [];
 
-        metrics.forEach((metric, metricIndex) => {
+        chartMetrics.forEach((metric, metricIndex) => {
             const angle = startAngle + (Math.PI * 2 * metricIndex) / axisCount;
             const rawValue = planet[metric.key];
             const isValid = rawValue != null;
@@ -266,10 +283,10 @@ function createSpiderSvg(planets, options = {}) {
 
         const pointCircles = allPoints.map((point, metricIndex) => {
             if (!point) return "";
-            const rawVal = planet[metrics[metricIndex].key];
+            const rawVal = planet[chartMetrics[metricIndex].key];
             const textVal = rawVal.toLocaleString();
             return `<circle cx="${point.x}" cy="${point.y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
-                <title>${metrics[metricIndex].label}: ${textVal} ${metrics[metricIndex].unit}</title>
+                <title>${chartMetrics[metricIndex].label}: ${textVal} ${chartMetrics[metricIndex].unit}</title>
             </circle>`;
         }).join("");
         allPointCirclesHtml += pointCircles;
@@ -329,12 +346,104 @@ function renderMetricList() {
         return;
     }
 
-    container.innerHTML = metrics.map(metric => `
-        <div class="metric-card">
-            <strong>${metric.label}</strong>
-            <span>${metric.key} · ${metric.unit} · ${metric.scale}</span>
+    const orderedMetrics = getMetricsByOrder();
+
+    container.innerHTML = orderedMetrics.map((metric, index) => {
+        const isHidden = state.hiddenMetricKeys.has(metric.key);
+
+        return `
+        <div class="metric-card axis-card ${isHidden ? "is-hidden" : ""}" draggable="true" data-metric-key="${metric.key}">
+            <label class="axis-toggle">
+                <input type="checkbox" data-axis-toggle="${metric.key}" ${isHidden ? "" : "checked"}>
+                <span>
+                    <strong>${metric.label}</strong>
+                    <span>${metric.key} &middot; ${metric.unit} &middot; ${metric.scale}</span>
+                </span>
+            </label>
+            <div class="axis-actions" aria-label="Move ${metric.label}">
+                <button type="button" data-axis-move="${metric.key}" data-direction="up" ${index === 0 ? "disabled" : ""} title="Move up">Up</button>
+                <button type="button" data-axis-move="${metric.key}" data-direction="down" ${index === orderedMetrics.length - 1 ? "disabled" : ""} title="Move down">Down</button>
+                <span class="drag-handle" title="Drag to reorder">Drag</span>
+            </div>
         </div>
-    `).join("");
+    `;
+    }).join("");
+
+    container.querySelectorAll("input[data-axis-toggle]").forEach(input => {
+        input.addEventListener("change", () => {
+            if (input.checked) {
+                state.hiddenMetricKeys.delete(input.dataset.axisToggle);
+            } else {
+                state.hiddenMetricKeys.add(input.dataset.axisToggle);
+            }
+
+            updateCompareView();
+        });
+    });
+
+    container.querySelectorAll("button[data-axis-move]").forEach(button => {
+        button.addEventListener("click", () => {
+            moveMetric(button.dataset.axisMove, button.dataset.direction === "up" ? -1 : 1);
+            updateCompareView();
+        });
+    });
+
+    container.querySelectorAll(".axis-card").forEach(card => {
+        card.addEventListener("dragstart", event => {
+            event.dataTransfer.setData("text/plain", card.dataset.metricKey);
+            event.dataTransfer.effectAllowed = "move";
+            card.classList.add("is-dragging");
+        });
+
+        card.addEventListener("dragend", () => {
+            card.classList.remove("is-dragging");
+        });
+
+        card.addEventListener("dragover", event => {
+            event.preventDefault();
+            card.classList.add("is-drop-target");
+        });
+
+        card.addEventListener("dragleave", () => {
+            card.classList.remove("is-drop-target");
+        });
+
+        card.addEventListener("drop", event => {
+            event.preventDefault();
+            card.classList.remove("is-drop-target");
+            const draggedKey = event.dataTransfer.getData("text/plain");
+            reorderMetric(draggedKey, card.dataset.metricKey);
+            updateCompareView();
+        });
+    });
+}
+
+function moveMetric(metricKey, offset) {
+    const currentIndex = state.metricOrder.indexOf(metricKey);
+    const nextIndex = currentIndex + offset;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= state.metricOrder.length) {
+        return;
+    }
+
+    const [metric] = state.metricOrder.splice(currentIndex, 1);
+    state.metricOrder.splice(nextIndex, 0, metric);
+}
+
+function reorderMetric(draggedKey, targetKey) {
+    if (!draggedKey || draggedKey === targetKey) {
+        return;
+    }
+
+    const fromIndex = state.metricOrder.indexOf(draggedKey);
+    const toIndex = state.metricOrder.indexOf(targetKey);
+
+    if (fromIndex < 0 || toIndex < 0) {
+        return;
+    }
+
+    const [metric] = state.metricOrder.splice(fromIndex, 1);
+    state.metricOrder.splice(toIndex, 0, metric);
 }
 
 function planetMatches(planet, query) {
@@ -435,8 +544,10 @@ function renderCompareChart() {
 
     const visiblePlanets = state.selected.filter(p => !p._hidden);
     const planets = visiblePlanets;
+    const visibleMetrics = getVisibleMetrics();
     
     chart.innerHTML = createSpiderSvg(planets, {
+        metrics: visibleMetrics,
         getColor: (p) => {
             let i = state.selected.indexOf(p);
             return colors[i >= 0 ? i : 0];
@@ -454,6 +565,7 @@ function renderCompareChart() {
 function updateCompareView() {
     updatePlanetSelect();
     renderSelectedPlanets();
+    renderMetricList();
     renderCompareChart();
 }
 
@@ -464,7 +576,6 @@ function initCompareView() {
 
     state.selected = [];
 
-    renderMetricList();
     updateCompareView();
 
     search.addEventListener("input", updateCompareView);
