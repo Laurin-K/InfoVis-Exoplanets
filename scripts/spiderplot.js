@@ -308,8 +308,11 @@ function createSpiderSvg(planets, options = {}) {
                 </g>`;
     }).join("");
 
+    const svgWidth = options.mini ? size : size + 300;
+    const xOffset = options.mini ? 0 : -150;
+
     return `
-        <svg viewBox="0 0 ${size} ${size}" role="img" aria-label="Spiderplot">
+        <svg viewBox="${xOffset} 0 ${svgWidth} ${size}" role="img" aria-label="Spiderplot" style="overflow: visible;">
             ${polygons}
             ${areas}
             ${axes}

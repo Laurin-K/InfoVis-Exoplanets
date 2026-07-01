@@ -50,8 +50,37 @@
             </aside>
 
             <section class="panel chart-panel">
-                <div id="spider-chart"></div>
-                <div id="spider-legend" class="legend"></div>
+                <div class="chart-container">
+                    <div class="chart-main">
+                        <div id="spider-chart"></div>
+                        <div id="spider-legend" class="legend"></div>
+                    </div>
+                    <aside class="reading-legend">
+                        <h3>How to Read</h3>
+                        <div class="reading-legend-item">
+                            <svg class="reading-legend-icon" width="32" height="16">
+                                <circle cx="16" cy="8" r="4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"></circle>
+                            </svg>
+                            <strong>Data Point</strong>
+                            Exact known value for a metric.
+                        </div>
+                        <div class="reading-legend-item">
+                            <svg class="reading-legend-icon" width="32" height="16">
+                                <path d="M0,8 L32,8" stroke="var(--accent)" stroke-width="2.6" fill="none"></path>
+                            </svg>
+                            <strong>Solid Line</strong>
+                            Connects contiguous known values.
+                        </div>
+                        <div class="reading-legend-item">
+                            <svg class="reading-legend-icon" width="32" height="16">
+                                <rect x="0" y="8" width="32" height="8" fill="var(--accent)" fill-opacity="0.16"></rect>
+                                <path d="M0,8 L32,8" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 4" fill="none"></path>
+                            </svg>
+                            <strong>Dashed Area</strong>
+                            Spans across metrics where data is missing.
+                        </div>
+                    </aside>
+                </div>
             </section>
         </main>
     </div>
