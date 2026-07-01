@@ -42,12 +42,37 @@
                     </div>
                 </div>
 
+                <p class="control-label">Axis scale</p>
+                <div class="plot-control-block">
+                    <select id="scale-mode-select" aria-label="Axis scale mode">
+                        <option value="auto">Auto: log for wide ranges</option>
+                        <option value="linear">Linear for all axes</option>
+                        <option value="log">Log where possible</option>
+                    </select>
+                    <p class="mini-note">Each axis is marked as LOG or LIN above the label.</p>
+                </div>
+
+                <p class="control-label">Line color</p>
+                <div class="plot-control-block">
+                    <label for="color-field-select">Color by</label>
+                    <select id="color-field-select" aria-label="Color lines by data field"></select>
+
+                    <label for="color-palette-select">Palette</label>
+                    <select id="color-palette-select" aria-label="Color palette">
+                        <option value="lch-spectrum">LCh equal-lightness spectrum</option>
+                        <option value="lch-warm-cool">LCh warm/cool</option>
+                        <option value="lch-categorical">LCh categorical bands</option>
+                    </select>
+
+                    <div id="color-legend" class="color-legend"></div>
+                </div>
+
                 <div class="action-buttons">
                     <button class="action-btn outline" onclick="toggleFullscreen()">Fullscreen Chart</button>
                 </div>
 
                 <p class="note">
-                    Hover an axis label for its glossary description. Click a data line to highlight one planet
+                    Hover a data line to focus it and fade the others. Click a line to keep one planet selected
                     and show its values below the chart.
                 </p>
             </aside>

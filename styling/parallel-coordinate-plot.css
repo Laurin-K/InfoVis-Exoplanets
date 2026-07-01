@@ -187,6 +187,67 @@ h1 {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.plot-control-block {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid rgba(178, 207, 222, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.plot-control-block label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+
+.plot-control-block select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid rgba(178, 207, 222, 0.24);
+  border-radius: 9px;
+  background: rgba(4, 8, 16, 0.9);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.mini-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.color-legend {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.legend-title {
+  color: #dfe9ff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.legend-swatch {
+  width: 28px;
+  height: 9px;
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.16);
+}
+
 .toggle-container {
   display: flex;
   align-items: center;
@@ -372,6 +433,20 @@ input:checked + .slider::before {
   font-weight: 700;
 }
 
+.scale-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.scale-tag-log {
+  fill: #f2c66d !important;
+}
+
+.scale-tag-lin {
+  fill: #8fe3c7 !important;
+}
+
 .line-group {
   cursor: pointer;
 }
@@ -379,17 +454,18 @@ input:checked + .slider::before {
 .line-group path {
   stroke-width: 1.7px;
   transition:
-    opacity 0.15s ease,
-    stroke-width 0.15s ease,
-    filter 0.15s ease;
+    opacity 0.08s ease,
+    stroke-width 0.08s ease,
+    filter 0.08s ease;
 }
 
-.line-group:hover path {
-  stroke-width: 2.6px;
-  filter: drop-shadow(0 0 5px rgba(143, 227, 199, 0.45));
+.line-group.hovered path {
+  stroke-width: 4.4px;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 5px rgba(242, 198, 109, 0.55));
 }
 
-.line-group:hover .line-solid {
+.line-group.hovered .line-solid {
   opacity: 1 !important;
 }
 
@@ -407,6 +483,18 @@ input:checked + .slider::before {
   stroke: #6f7b90 !important;
 }
 
+.line-group.hover-dimmed path {
+  opacity: 0.05 !important;
+  stroke-width: 0.8px;
+  filter: none;
+}
+
+.line-group.hovered path,
+.line-group.selected.hovered path {
+  stroke-width: 4.4px !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 5px rgba(242, 198, 109, 0.6));
+}
 
 .infocard {
   display: none;

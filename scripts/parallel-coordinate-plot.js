@@ -15,6 +15,18 @@ let activeDimensions = [
     "pl_orbper", "pl_orbsmax"
 ];
 const brushes = {};
+let scaleMode = "auto";
+let colorField = "sy_snum";
+let colorPalette = "lch-spectrum";
+
+const colorFieldOptions = [
+    "sy_snum", "sy_pnum", "disc_year",
+    "pl_orbper", "pl_orbsmax",
+    "pl_rade", "pl_bmasse",
+    "st_teff", "sy_dist"
+];
+
+const categoricalColorFields = new Set(["sy_snum", "sy_pnum"]);
 
 function toggleMassReference(checked) {
     const badgeEarth = document.getElementById('badge-earth');
@@ -101,6 +113,146 @@ function initBrushes(dimensions){
     });
 }
 
+function createPlotOptionControls() {
+    const colorFieldSelect = d3.select("#color-field-select");
+    const scaleModeSelect = d3.select("#scale-mode-select");
+    const colorPaletteSelect = d3.select("#color-palette-select");
+
+    colorFieldSelect
+        .selectAll("option")
+        .data(colorFieldOptions)
+        .join("option")
+        .attr("value", d => d)
+        .text(d => columnExplanations[d] ? columnExplanations[d].name : d);
+
+    colorFieldSelect.property("value", colorField);
+    scaleModeSelect.property("value", scaleMode);
+    colorPaletteSelect.property("value", colorPalette);
+
+    colorFieldSelect.on("change", function() {
+        colorField = this.value;
+        draw(activeDimensions);
+    });
+
+    scaleModeSelect.on("change", function() {
+        scaleMode = this.value;
+        draw(activeDimensions);
+    });
+
+    colorPaletteSelect.on("change", function() {
+        colorPalette = this.value;
+        draw(activeDimensions);
+    });
+}
+
+function getReadableFieldName(field) {
+    return columnExplanations[field] ? columnExplanations[field].name : field;
+}
+
+function createLchColor(hue, lightness = 68, chroma = 64) {
+    return d3.hcl(hue, chroma, lightness).formatHex();
+}
+
+function buildColorScale(data) {
+    const values = data
+        .map(d => d[colorField])
+        .filter(v => v != null && !isNaN(v));
+
+    if (!values.length) {
+        return {
+            color: () => "#8fe3c7",
+            legendItems: [{ label: "No data", color: "#8fe3c7" }]
+        };
+    }
+
+    if (categoricalColorFields.has(colorField)) {
+        const categories = Array.from(new Set(values.map(String))).sort((a, b) => +a - +b);
+        const colorByCategory = new Map(categories.map((category, index) => {
+            const ratio = categories.length <= 1 ? 0.5 : index / (categories.length - 1);
+            let hue = (index * 360 / Math.max(categories.length, 1) + 25) % 360;
+
+            if (colorPalette === "lch-warm-cool") {
+                hue = 260 - ratio * 210;
+            }
+
+            if (colorPalette === "lch-categorical") {
+                const categoricalHues = [25, 88, 155, 214, 282, 340];
+                hue = categoricalHues[index % categoricalHues.length];
+            }
+
+            return [category, createLchColor(hue, 68, 62)];
+        }));
+
+        return {
+            color: d => colorByCategory.get(String(d[colorField])) || "#8fe3c7",
+            legendItems: categories.map(category => ({
+                label: category,
+                color: colorByCategory.get(category)
+            }))
+        };
+    }
+
+    const extent = d3.extent(values);
+    const sameValue = extent[0] === extent[1];
+    const colorForRatio = ratio => {
+        const t = sameValue ? 0.5 : Math.max(0, Math.min(1, ratio));
+
+        if (colorPalette === "lch-warm-cool") {
+            return createLchColor(260 - t * 210, 68, 58);
+        }
+
+        if (colorPalette === "lch-categorical") {
+            const band = Math.min(5, Math.floor(t * 6));
+            return createLchColor((band * 58 + 20) % 360, 68, 62);
+        }
+
+        return createLchColor((20 + t * 300) % 360, 68, 62);
+    };
+
+    return {
+        color: d => {
+            const value = d[colorField];
+            if (value == null || isNaN(value)) return "rgba(165, 184, 217, 0.55)";
+            return colorForRatio((value - extent[0]) / (extent[1] - extent[0]));
+        },
+        legendItems: d3.range(5).map(i => {
+            const ratio = i / 4;
+            const value = extent[0] + (extent[1] - extent[0]) * ratio;
+            return {
+                label: formatLegendValue(value),
+                color: colorForRatio(ratio)
+            };
+        })
+    };
+}
+
+function formatLegendValue(value) {
+    if (Math.abs(value) >= 1000) return d3.format(".2s")(value);
+    if (Math.abs(value) >= 10) return d3.format(".0f")(value);
+    return d3.format(".2~f")(value);
+}
+
+function updateColorLegend(colorConfig) {
+    const legend = d3.select("#color-legend");
+    legend.selectAll("*").remove();
+
+    legend.append("div")
+        .attr("class", "legend-title")
+        .text(`Color: ${getReadableFieldName(colorField)}`);
+
+    const items = legend.selectAll(".legend-item")
+        .data(colorConfig.legendItems)
+        .join("div")
+        .attr("class", "legend-item");
+
+    items.append("span")
+        .attr("class", "legend-swatch")
+        .style("background", d => d.color);
+
+    items.append("span")
+        .text(d => d.label);
+}
+
 let fullData = [];
 let columnExplanations = {};
 
@@ -123,6 +275,7 @@ Promise.all([
     createTableFromCSV(explanationsCsv);
 
     createCheckboxes();
+    createPlotOptionControls();
     draw(activeDimensions);
 });
 
@@ -187,6 +340,7 @@ function draw(dimensions)
 
     // Y-Axis data
     const y = {};
+    const scaleTypes = {};
 
     dimensions.forEach(dim => {
 
@@ -198,13 +352,18 @@ function draw(dimensions)
         const max = d3.max(values);
 
         const ratio = max / min;
+        const canUseLog = min > 0 && max > 0;
+        const shouldUseLog =
+            canUseLog &&
+            (scaleMode === "log" || (scaleMode === "auto" && ratio > 50));
 
-        if (min > 0 && ratio > 50) {
+        if (shouldUseLog) {
 
             y[dim] = d3.scaleLog()
                 .domain([min, max])
                 .range([height, 0])
                 .nice();
+            scaleTypes[dim] = "LOG";
 
         } else {
 
@@ -212,6 +371,7 @@ function draw(dimensions)
                 .domain([min, max])
                 .range([height, 0])
                 .nice();
+            scaleTypes[dim] = "LIN";
         }
 
     });
@@ -276,6 +436,11 @@ function draw(dimensions)
             const el = d3.select(this);
             const rawName = columnExplanations[d] ? columnExplanations[d].name : d;
             const words = rawName.split(/\s+/);
+            el.append("tspan")
+                .attr("class", `scale-tag scale-tag-${scaleTypes[d].toLowerCase()}`)
+                .attr("x", 0)
+                .attr("y", -42)
+                .text(scaleTypes[d]);
             
             if (words.length > 1) {
                 const mid = Math.ceil(words.length / 2);
@@ -457,16 +622,20 @@ function draw(dimensions)
     function updateLines() {
         svg.selectAll(".line-group")
             .style("display", function(d) {
-                return dimensions.every(dim => {
-                    if (!brushes[dim]) return true;
-
-                    const value = d[dim];
-                    if (value == null) return false; // Hide if missing on brushed axis
-
-                    const [min, max] = brushes[dim];
-                    return value >= min && value <= max;
-                }) ? null : "none";
+                return passesActiveBrushes(d) ? null : "none";
             });
+    }
+
+    function passesActiveBrushes(d) {
+        return dimensions.every(dim => {
+            if (!brushes[dim]) return true;
+
+            const value = d[dim];
+            if (value == null) return false; // Hide if missing on brushed axis
+
+            const [min, max] = brushes[dim];
+            return value >= min && value <= max;
+        });
     }
 
     const foregroundLine = d3.line().defined(d => d !== null);
@@ -504,9 +673,90 @@ function draw(dimensions)
         return dashedLine(points);
     }
 
-    var color = d3.scaleOrdinal()
-        .domain(["1", "2", "3", "4", "5"])
-        .range([ "#440154ff", "#21908dff", "#fde725ff", "#123456ff", "#abcdefff"]);
+    function foregroundPoints(d) {
+        return dimensions
+            .map(dim => {
+                if (d[dim] != null) return [position(dim), y[dim](d[dim])];
+                return null;
+            })
+            .filter(Boolean);
+    }
+
+    function distanceToLine(points, px, py) {
+        if (points.length === 1) {
+            return Math.hypot(px - points[0][0], py - points[0][1]);
+        }
+
+        let minDistance = Infinity;
+        for (let i = 1; i < points.length; i++) {
+            minDistance = Math.min(minDistance, distanceToSegment(px, py, points[i - 1], points[i]));
+        }
+        return minDistance;
+    }
+
+    function distanceToSegment(px, py, a, b) {
+        const dx = b[0] - a[0];
+        const dy = b[1] - a[1];
+        const lengthSquared = dx * dx + dy * dy;
+
+        if (lengthSquared === 0) return Math.hypot(px - a[0], py - a[1]);
+
+        const t = Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / lengthSquared));
+        const closestX = a[0] + t * dx;
+        const closestY = a[1] + t * dy;
+        return Math.hypot(px - closestX, py - closestY);
+    }
+
+    function updateHoverFromPointer(event) {
+        if (selectedPlanet) return;
+
+        const [px, py] = d3.pointer(event, svg.node());
+
+        if (px < 0 || px > width || py < 0 || py > height) {
+            clearHoverFocus();
+            return;
+        }
+
+        let nearest = null;
+        let nearestDistance = Infinity;
+        let currentHovered = null;
+        let currentHoveredDistance = Infinity;
+
+        data.forEach(d => {
+            if (!passesActiveBrushes(d)) return;
+            const points = foregroundPoints(d);
+            if (points.length === 0) return;
+
+            const distance = distanceToLine(points, px, py);
+            if (hoveredPlanetName && d.pl_name === hoveredPlanetName) {
+                currentHovered = d;
+                currentHoveredDistance = distance;
+            }
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = d;
+            }
+        });
+
+        if (
+            currentHovered &&
+            currentHoveredDistance <= 12 &&
+            nearestDistance + 4 >= currentHoveredDistance
+        ) {
+            focusDatalineOnHover(currentHovered);
+            return;
+        }
+
+        if (nearest && nearestDistance <= 7) {
+            focusDatalineOnHover(nearest);
+        } else {
+            clearHoverFocus();
+        }
+    }
+
+    const colorConfig = buildColorScale(data);
+    updateColorLegend(colorConfig);
 
     const lineGroups = svg.selectAll(".line-group")
         .data(data)
@@ -522,7 +772,7 @@ function draw(dimensions)
         .attr("class", "line-dashed")
         .attr("d", backgroundPath)
         .style("fill", "none")
-        .style("stroke", d => color(d.sy_snum))
+        .style("stroke", d => colorConfig.color(d))
         .style("stroke-dasharray", "4 4")
         .style("opacity", 0.4);
 
@@ -530,7 +780,7 @@ function draw(dimensions)
         .attr("class", "line-solid")
         .attr("d", foregroundPath)
         .style("fill", "none")
-        .style("stroke", d => color(d.sy_snum));
+        .style("stroke", d => colorConfig.color(d));
 
     // If a planet was already selected, re-apply the visual classes to the new paths
     if (selectedPlanet) {
@@ -546,13 +796,63 @@ function draw(dimensions)
 
     // Apply any existing brushes to the newly created lines
     updateLines();
+
+    svg
+        .on("mousemove.hover", updateHoverFromPointer)
+        .on("mouseleave.hover", clearHoverFocus);
 }
 
 //Single planet selection
 let selectedPlanet = null;
+let hoveredPlanetName = null;
+let hoverClearTimeout = null;
+
+function focusDatalineOnHover(d) {
+    if (hoverClearTimeout) {
+        clearTimeout(hoverClearTimeout);
+        hoverClearTimeout = null;
+    }
+
+    if (hoveredPlanetName === d.pl_name) return;
+    hoveredPlanetName = d.pl_name;
+
+    d3.selectAll(".line-group")
+        .classed("hovered", function(lineData) { return lineData.pl_name === d.pl_name; })
+        .classed("hover-dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; })
+        .classed("dimmed", function(lineData) {
+            return selectedPlanet &&
+                lineData.pl_name !== selectedPlanet.pl_name &&
+                lineData.pl_name !== d.pl_name;
+        });
+}
+
+function clearHoverFocus(force = false) {
+    if (hoverClearTimeout) clearTimeout(hoverClearTimeout);
+
+    const clear = () => {
+        hoveredPlanetName = null;
+
+        d3.selectAll(".line-group")
+            .classed("hovered", false)
+            .classed("hover-dimmed", false);
+
+        if (selectedPlanet) {
+            d3.selectAll(".line-group")
+                .classed("selected", function(lineData) { return lineData.pl_name === selectedPlanet.pl_name; })
+                .classed("dimmed", function(lineData) { return lineData.pl_name !== selectedPlanet.pl_name; });
+        }
+    };
+
+    if (force) {
+        clear();
+    } else {
+        hoverClearTimeout = setTimeout(clear, 80);
+    }
+}
 
 function selectDataline(d) {
     selectedPlanet = d;
+    clearHoverFocus(true);
 
     d3.selectAll(".line-group")
         .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
@@ -563,6 +863,7 @@ function selectDataline(d) {
 
 function deselectAllDatalines() {
     selectedPlanet = null;
+    hoveredPlanetName = null;
 
     d3.selectAll(".line-group")
         .classed("selected", false)
