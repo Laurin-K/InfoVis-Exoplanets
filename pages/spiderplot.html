@@ -31,10 +31,19 @@
                 <input id="planet-search" type="search" list="planet-datalist" placeholder="Type a planet name...">
                 <datalist id="planet-datalist"></datalist>
 
-                <p id="selection-note" class="note">Choose 1 to 4 planets. Selecting from search adds it.</p>
+                <p id="selection-note" class="note">Choose 1 to 4 planets. Search only shows planets with at least 3 known values.</p>
                 <div id="selected-planets" class="selected-planets" style="margin-bottom: 24px;"></div>
                 
                 <hr style="border: none; border-top: 1px solid rgba(178,207,222,0.18); margin: 0 0 16px 0;">
+
+                <div style="margin-bottom: 16px;">
+                    <label class="control-label" for="spider-scale-mode">Scale</label>
+                    <select id="spider-scale-mode">
+                        <option value="linear">Linear, all axes start at 0</option>
+                        <option value="log">Log, all axes start at 0</option>
+                    </select>
+                    <p class="note">Compare uses one shared scale mode for every axis.</p>
+                </div>
                 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
                     <h2 style="margin: 0; font-size: 1.1rem;">Axis Controls</h2>

@@ -27,6 +27,7 @@ const state = {
     visiblePlanets: [],
     selected: [],
     domains: new Map(),
+    scaleMode: "log",
     metricOrder: metrics.map(metric => metric.key),
     hiddenMetricKeys: new Set(),
     modalPlanet: null,
@@ -138,23 +139,32 @@ function preparePlanets(rows) {
                 planet[metric.key] = toNumber(row[metric.key]);
             });
 
+            planet.knownMetricCount = countKnownMetrics(planet);
             return planet;
         })
         .filter(planet => planet.pl_name && metrics.some(metric => planet[metric.key] != null));
+}
+
+function countKnownMetrics(planet) {
+    return metrics.filter(metric => planet[metric.key] != null && Number.isFinite(planet[metric.key])).length;
+}
+
+function isCompareEligible(planet) {
+    return countKnownMetrics(planet) >= 3;
 }
 
 function calculateDomains(planets) {
     metrics.forEach(metric => {
         const values = planets
             .map(planet => planet[metric.key])
-            .filter(value => value != null && Number.isFinite(value) && (metric.scale !== "log" || value > 0));
+            .filter(value => value != null && Number.isFinite(value));
 
         if (!values.length) {
             state.domains.set(metric.key, [0, 1]);
             return;
         }
 
-        state.domains.set(metric.key, [Math.min(...values), Math.max(...values)]);
+        state.domains.set(metric.key, [0, Math.max(...values)]);
     });
 }
 
@@ -163,16 +173,16 @@ function normalizeValue(metric, rawValue) {
         return 0;
     }
 
-    const [min, max] = state.domains.get(metric.key) || [0, 1];
-    if (min === max) {
+    const [, max] = state.domains.get(metric.key) || [0, 1];
+    if (max === 0) {
         return 0.5;
     }
 
-    if (metric.scale === "log" && rawValue > 0 && min > 0) {
-        return (Math.log(rawValue) - Math.log(min)) / (Math.log(max) - Math.log(min));
+    if (state.scaleMode === "log") {
+        return Math.log1p(Math.max(0, rawValue)) / Math.log1p(max);
     }
 
-    return (rawValue - min) / (max - min);
+    return rawValue / max;
 }
 
 function polarPoint(center, radius, angle, value = 1) {
@@ -224,8 +234,8 @@ function createSpiderSvg(planets, options = {}) {
             const pos = polarPoint(center, radius, angle, fraction);
             
             let val;
-            if (metric.scale === "log" && min > 0 && max > 0) {
-                val = Math.exp(Math.log(min) + fraction * (Math.log(max) - Math.log(min)));
+            if (state.scaleMode === "log") {
+                val = Math.expm1(fraction * Math.log1p(max));
             } else {
                 val = min + fraction * (max - min);
             }
@@ -248,7 +258,7 @@ function createSpiderSvg(planets, options = {}) {
 
         const minText = min >= 1000 ? Math.round(min).toLocaleString() : min >= 10 ? Number(min.toFixed(1)).toLocaleString() : Number(min.toFixed(3)).toLocaleString();
         const maxText = max >= 1000 ? Math.round(max).toLocaleString() : max >= 10 ? Number(max.toFixed(1)).toLocaleString() : Number(max.toFixed(3)).toLocaleString();
-        const subtitle = !options.mini ? `<text class="radar-subtitle" x="${label.x}" y="${label.y + 14}" text-anchor="${anchor}">[${minText} - ${maxText} ${metric.unit}]</text>` : "";
+        const subtitle = !options.mini ? `<text class="radar-subtitle" x="${label.x}" y="${label.y + 14}" text-anchor="${anchor}">[${minText} - ${maxText} ${metric.unit}, ${state.scaleMode}]</text>` : "";
 
         return `
             <g class="radar-axis-group">
@@ -359,7 +369,7 @@ function renderMetricList() {
                 <input type="checkbox" data-axis-toggle="${metric.key}" ${isHidden ? "" : "checked"}>
                 <span>
                     <strong>${metric.label}</strong>
-                    <span>${metric.key} &middot; ${metric.unit} &middot; ${metric.scale}</span>
+                    <span>${metric.key} &middot; ${metric.unit} &middot; ${state.scaleMode}</span>
                 </span>
             </label>
             <div class="axis-actions" aria-label="Move ${metric.label}">
@@ -466,9 +476,10 @@ function updatePlanetSelect() {
 
     const query = input.value;
     const selectedNames = new Set(state.selected.map(planet => planet.pl_name));
+    const comparePlanets = state.allPlanets.filter(isCompareEligible);
     
     // Auto-add exact match
-    const exactMatch = state.allPlanets.find(p => `${p.pl_name} (${p.hostname})` === query && !selectedNames.has(p.pl_name));
+    const exactMatch = comparePlanets.find(p => `${p.pl_name} (${p.hostname})` === query && !selectedNames.has(p.pl_name));
     if (exactMatch) {
         if (state.selected.length < maxSelection) {
             state.selected.push(exactMatch);
@@ -478,7 +489,7 @@ function updatePlanetSelect() {
         return;
     }
 
-    state.visiblePlanets = state.allPlanets
+    state.visiblePlanets = comparePlanets
         .filter(planet => planetMatches(planet, query) && !selectedNames.has(planet.pl_name))
         .slice(0, 100); // Reduce rendering load for datalist
 
@@ -532,7 +543,7 @@ function renderSelectedPlanets() {
         note.textContent = "Maximum of 4 planets reached. Remove one before adding another.";
         note.classList.add("error");
     } else {
-        note.textContent = `${state.selected.length} of ${maxSelection} planets selected. Search to add.`;
+        note.textContent = `${state.selected.length} of ${maxSelection} planets selected. Search only includes planets with at least 3 known values.`;
         note.classList.remove("error");
     }
 }
@@ -571,16 +582,41 @@ function updateCompareView() {
     renderCompareChart();
 }
 
+function getDefaultComparePlanets() {
+    const examples = ["TRAPPIST-1 e", "55 Cnc e", "WASP-76 b"];
+    const selected = examples
+        .map(name => state.allPlanets.find(planet => planet.pl_name === name && isCompareEligible(planet)))
+        .filter(Boolean);
+
+    if (selected.length >= 2) {
+        return selected.slice(0, 3);
+    }
+
+    return state.allPlanets
+        .filter(isCompareEligible)
+        .sort((a, b) => b.knownMetricCount - a.knownMetricCount || a.pl_name.localeCompare(b.pl_name))
+        .slice(0, 3);
+}
+
 function initCompareView() {
     const search = document.querySelector("#planet-search");
     const toggleValues = document.querySelector("#toggle-axis-values");
+    const scaleMode = document.querySelector("#spider-scale-mode");
     const chartPanel = document.querySelector(".chart-panel");
 
-    state.selected = [];
+    state.selected = getDefaultComparePlanets();
 
     updateCompareView();
 
     search.addEventListener("input", updateCompareView);
+
+    if (scaleMode) {
+        scaleMode.value = state.scaleMode;
+        scaleMode.addEventListener("change", event => {
+            state.scaleMode = event.target.value === "log" ? "log" : "linear";
+            updateCompareView();
+        });
+    }
     
     if (toggleValues && chartPanel) {
         toggleValues.addEventListener("change", (e) => {
@@ -626,7 +662,7 @@ function getGalleryFilters() {
         yearFrom: yearFrom && yearFrom.value ? Number(yearFrom.value) : null,
         yearTo: yearTo && yearTo.value ? Number(yearTo.value) : null,
         metricKey: metricFilter ? metricFilter.value : "",
-        sortBy: sort ? sort.value : "host"
+        sortBy: sort ? sort.value : "count"
     };
 }
 
@@ -812,7 +848,7 @@ function renderPlanetModal() {
                     ${metrics.map(metric => `
                         <tr>
                             <th>${escapeHtml(metric.label)}</th>
-                            <td>${formatValue(planet[metric.key], metric.unit)} <span>${escapeHtml(metric.key)}, ${escapeHtml(metric.scale)}</span></td>
+                            <td>${formatValue(planet[metric.key], metric.unit)} <span>${escapeHtml(metric.key)}, ${escapeHtml(state.scaleMode)}</span></td>
                         </tr>
                     `).join("")}
                 </tbody>
