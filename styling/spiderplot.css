@@ -216,9 +216,11 @@ button:focus {
 #spider-chart svg {
     display: block;
     width: 100%;
-    max-width: calc(100vh - 250px);
+    max-width: 860px;
+    max-height: calc(100vh - 220px);
     margin: 0 auto;
     height: auto;
+    overflow: visible;
 }
 
 .radar-grid {
@@ -228,6 +230,31 @@ button:focus {
 
 .radar-axis {
     stroke: rgba(178, 207, 222, 0.2);
+}
+
+.radar-axis-hover {
+    stroke: transparent;
+    stroke-width: 16;
+    fill: none;
+    cursor: default;
+}
+
+.radar-axis-value {
+    fill: var(--text);
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    text-shadow: 0 0 3px var(--bg), 0 0 4px var(--bg);
+}
+
+.radar-axis-group {
+    pointer-events: all;
+}
+
+.radar-axis-group:hover .radar-axis-value,
+.show-axis-values .radar-axis-value {
+    opacity: 1;
 }
 
 .radar-label {
@@ -380,5 +407,125 @@ button:focus {
 
     .radar-label {
         font-size: 10px;
+    }
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 20px;
+    border: 1px solid rgba(178, 207, 222, 0.24);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--muted);
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: rgba(143, 227, 199, 0.2);
+    border-color: rgba(143, 227, 199, 0.4);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(16px);
+    background-color: var(--accent);
+}
+
+.chart-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.chart-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.reading-legend {
+    width: 220px;
+    flex-shrink: 0;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.reading-legend h3 {
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.reading-legend-item {
+    margin-bottom: 14px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.reading-legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.reading-legend-item strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.reading-legend-icon {
+    display: block;
+    margin-bottom: 6px;
+}
+
+@media (max-width: 1200px) {
+    .chart-container {
+        flex-direction: column;
+    }
+    .reading-legend {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .reading-legend h3 {
+        width: 100%;
+        margin: 0;
+    }
+    .reading-legend-item {
+        flex: 1;
+        min-width: 180px;
+        margin-bottom: 0;
     }
 }
