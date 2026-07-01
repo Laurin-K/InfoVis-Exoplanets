@@ -1,0 +1,33 @@
+# Feedback
+
+## Allgmein
+Achsenbeschriftungen prüfen
+Sonnensystemplaneten hinzufügen für kontext
+
+## PCP
+mit hover bereits Highlights der linien / andere halb ausgrauen ausgrauen (deutlich größer machen)
+geringe objektsichtbarkeit wenn alle linien geplotet. objekt ist ein planet/1 linie
+farbe lila nicht gut sichtbar. 
+LCh Farbraum suchen, da sind alle farben gleich hell, da lassen sich alle farben gut sichtbar unterscheiden
+log und linear besser kennzeichnen und umschaltbar machen. entscheidung warum log sichtbar machen. 
+keine zwischenwerte
+
+## Spider
+beispiele wieder einbauen
+nur planeten, die im gleichen system sind. 
+achsen bei 0 anfangen lassen. 
+log und linear skalen vermischt. bitte nur eins machen davon. 
+kreuzungspunkte müssen nicht immer die werte sein, die krum sind. sondern vielleicht sinnvollere werte. 
+farbschemen für eine achse spezifisch ggf. 
+
+## Spider Gallery
+was bringt die übersicht genau?
+
+## Scatter
+wie im expertenfeedback. 
+
+## habitable zone 
+auswahl anhand von systemen nicht einzelne planeten 
+
+## vergleich der systeme
+idee von laura. gern einbauen und versuchen noch mehr attribute mit reinbringen. 
