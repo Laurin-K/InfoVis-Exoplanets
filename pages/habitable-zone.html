@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>Habitable Zone Explorer</title>
     <link rel="stylesheet" href="../styling/habitable-zone.css">
+    <link rel="stylesheet" href="../styling/navigation.css">
     <script src="https://d3js.org/d3.v7.js"></script>
+    <script src="../scripts/navigation.js" defer></script>
 </head>
+
 <body>
     <div class="page-container">
         <header class="header">
             <div class="eyebrow">Interactive Simulation</div>
             <h1>Habitable Zone Explorer</h1>
-            <p class="subtitle">Discover where liquid water could exist. The "Goldilocks Zone" is calculated based on the star's temperature and radius. Select a planet to see its orbit!</p>
+            <p class="subtitle">Discover where liquid water could exist. The "Goldilocks Zone" is calculated based on
+                the star's temperature and radius. Select a planet to see its orbit!</p>
         </header>
 
         <div class="main-layout">
@@ -22,7 +27,7 @@
                         <option value="">Loading planets...</option>
                     </select>
                 </div>
-                
+
                 <div id="system-info" class="info-block" style="display: none;">
                     <h3>System Data</h3>
                     <div class="info-row"><span>Star Temp:</span> <strong id="val-teff"></strong></div>
@@ -37,7 +42,7 @@
                     <p class="note">Watch how the habitable zone shifts when the star gets hotter or cooler.</p>
                     <button id="reset-btn" class="primary-button">Reset to Actual</button>
                 </div>
-                
+
                 <div id="status-card" class="status-card">
                     <h4 id="status-title">Status</h4>
                     <p id="status-desc">-</p>
@@ -49,7 +54,8 @@
             </main>
         </div>
     </div>
-    
+
     <script src="../scripts/habitable-zone.js"></script>
 </body>
+
 </html>

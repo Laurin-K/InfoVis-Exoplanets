@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>Gravity Drop Simulator</title>
     <link rel="stylesheet" href="../styling/gravity-drop.css">
+    <link rel="stylesheet" href="../styling/navigation.css">
     <script src="https://d3js.org/d3.v7.js"></script>
+    <script src="../scripts/navigation.js" defer></script>
 </head>
+
 <body>
     <div class="page-container">
         <header class="header">
             <div class="eyebrow">Interactive Physics</div>
             <h1>Gravity Drop Simulator</h1>
-            <p class="subtitle">Experience how strong gravity is on different exoplanets. Select a planet and drop the probe to see how fast it falls compared to Earth.</p>
+            <p class="subtitle">Experience how strong gravity is on different exoplanets. Select a planet and drop the
+                probe to see how fast it falls compared to Earth.</p>
         </header>
 
         <div class="main-layout">
@@ -22,12 +27,13 @@
                         <option value="">Loading planets...</option>
                     </select>
                 </div>
-                
+
                 <div id="system-info" class="info-block" style="display: none;">
                     <h3>Planet Data</h3>
                     <div class="info-row"><span>Mass:</span> <strong id="val-mass"></strong></div>
                     <div class="info-row"><span>Radius:</span> <strong id="val-rad"></strong></div>
-                    <div class="info-row"><span>Surface Gravity:</span> <strong id="val-grav" class="highlight"></strong></div>
+                    <div class="info-row"><span>Surface Gravity:</span> <strong id="val-grav"
+                            class="highlight"></strong></div>
                 </div>
 
                 <div class="control-block">
@@ -66,7 +72,8 @@
             </main>
         </div>
     </div>
-    
+
     <script src="../scripts/gravity-drop.js"></script>
 </body>
+
 </html>

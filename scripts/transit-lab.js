@@ -139,13 +139,15 @@ function onPlanetSelect(planetName) {
   pradSlider.property("value", state.simPrad);
   pradDisplay.text(state.simPrad.toFixed(1));
 
-  // Determine a suitable fixed Y axis for this planet
-  const rp_rs = state.selectedPlanet.prad / (state.selectedPlanet.srad * 109);
-  const baseDepth = Math.pow(rp_rs, 2);
+  // Determine a suitable fixed Y axis for this planet based on the MAX slider value
+  // The max value on the slider is 25 R_earth
+  const max_rp_rs = 25 / (state.selectedPlanet.srad * 109);
+  const maxDepth = Math.min(1.0, Math.pow(max_rp_rs, 2));
   
-  // Give some room below for adjustments (e.g. 5x initial depth)
-  let minFlux = 1.0 - baseDepth * 5;
-  if (minFlux > 0.99) minFlux = 0.99; // Fallback for very small planets
+  // Set the minimum flux to accommodate the maximum possible drop (with 10% padding)
+  let minFlux = 1.0 - maxDepth * 1.1;
+  if (minFlux < 0) minFlux = 0; // Can't block more than 100% of the light
+  if (minFlux > 0.99) minFlux = 0.99; // Fallback for very small max depths
   
   yScale.domain([minFlux, 1.002]);
   yAxis.call(d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".4f")));
