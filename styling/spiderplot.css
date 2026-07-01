@@ -408,15 +408,51 @@ button:focus {
     display: flex;
     align-items: end;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 18px;
     margin-bottom: 18px;
 }
 
 .gallery-toolbar > div {
+    width: min(260px, 100%);
+}
+
+.gallery-toolbar > div:first-child {
     width: min(420px, 100%);
 }
 
 .spider-gallery {
+    display: grid;
+    gap: 18px;
+}
+
+.host-group {
+    padding: 14px;
+    border: 1px solid rgba(178, 207, 222, 0.14);
+    border-radius: 20px;
+    background: rgba(5, 12, 18, 0.42);
+}
+
+.host-group-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.host-group-header h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 1.08rem;
+}
+
+.host-group-header span {
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.host-planet-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 14px;
@@ -429,7 +465,20 @@ button:focus {
     background: rgba(5, 12, 18, 0.66);
 }
 
-.mini-card h2 {
+.clickable-mini-card {
+    cursor: pointer;
+    transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.clickable-mini-card:hover,
+.clickable-mini-card:focus {
+    border-color: rgba(143, 227, 199, 0.48);
+    background: rgba(143, 227, 199, 0.07);
+    transform: translateY(-2px);
+}
+
+.mini-card h2,
+.mini-card h3 {
     margin: 0 0 2px;
     overflow: hidden;
     color: var(--text);
@@ -592,6 +641,167 @@ button:focus {
     margin-bottom: 6px;
 }
 
+.planet-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.planet-modal.is-open {
+    display: flex;
+}
+
+.planet-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(1, 6, 10, 0.74);
+    backdrop-filter: blur(12px);
+}
+
+.planet-modal-dialog {
+    position: relative;
+    width: min(1180px, 96vw);
+    max-height: min(880px, 92vh);
+    overflow: auto;
+    padding: 22px;
+}
+
+.modal-close {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    float: right;
+    width: auto;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.planet-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.planet-modal-header h2 {
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 3rem);
+}
+
+.planet-modal-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    gap: 18px;
+    align-items: start;
+}
+
+.modal-chart {
+    min-width: 0;
+}
+
+.modal-chart svg {
+    display: block;
+    width: 100%;
+    max-height: 580px;
+}
+
+.modal-axis-panel {
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.modal-axis-panel h3,
+.planet-data-section h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.modal-axis-list {
+    display: grid;
+    gap: 8px;
+}
+
+.modal-axis-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.045);
+    cursor: pointer;
+}
+
+.modal-axis-option.is-hidden {
+    opacity: 0.55;
+}
+
+.modal-axis-option.is-missing small {
+    color: var(--danger);
+}
+
+.modal-axis-option input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--accent);
+}
+
+.modal-axis-option span {
+    display: grid;
+    gap: 2px;
+}
+
+.modal-axis-option small {
+    color: var(--muted);
+}
+
+.planet-data-section {
+    margin-top: 18px;
+}
+
+.planet-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.planet-data-table th,
+.planet-data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(178, 207, 222, 0.12);
+    text-align: left;
+    vertical-align: top;
+}
+
+.planet-data-table th {
+    width: 220px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.planet-data-table td {
+    color: var(--muted);
+}
+
+.planet-data-table td span {
+    display: block;
+    margin-top: 2px;
+    opacity: 0.68;
+    font-size: 0.78rem;
+}
+
 @media (max-width: 1200px) {
     .chart-container {
         flex-direction: column;
@@ -610,5 +820,9 @@ button:focus {
         flex: 1;
         min-width: 180px;
         margin-bottom: 0;
+    }
+
+    .planet-modal-grid {
+        grid-template-columns: 1fr;
     }
 }

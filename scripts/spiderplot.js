@@ -28,7 +28,9 @@ const state = {
     selected: [],
     domains: new Map(),
     metricOrder: metrics.map(metric => metric.key),
-    hiddenMetricKeys: new Set()
+    hiddenMetricKeys: new Set(),
+    modalPlanet: null,
+    modalHiddenMetricKeys: new Set()
 };
 
 function getMetricsByOrder() {
@@ -591,34 +593,277 @@ function initCompareView() {
     }
 }
 
-function renderGallery(query = "") {
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function formatValue(value, unit = "") {
+    if (value == null || !Number.isFinite(value)) {
+        return "Missing";
+    }
+
+    const formatted = Math.abs(value) >= 1000
+        ? Math.round(value).toLocaleString()
+        : Number(value.toFixed(Math.abs(value) >= 10 ? 2 : 4)).toLocaleString();
+
+    return unit ? `${formatted} ${unit}` : formatted;
+}
+
+function getGalleryFilters() {
+    const search = document.querySelector("#gallery-search");
+    const yearFrom = document.querySelector("#gallery-year-from");
+    const yearTo = document.querySelector("#gallery-year-to");
+    const metricFilter = document.querySelector("#gallery-metric-filter");
+    const sort = document.querySelector("#gallery-sort");
+
+    return {
+        query: search ? search.value.trim().toLowerCase() : "",
+        yearFrom: yearFrom && yearFrom.value ? Number(yearFrom.value) : null,
+        yearTo: yearTo && yearTo.value ? Number(yearTo.value) : null,
+        metricKey: metricFilter ? metricFilter.value : "",
+        sortBy: sort ? sort.value : "host"
+    };
+}
+
+function planetPassesGalleryFilters(planet, filters) {
+    if (filters.query && !`${planet.pl_name} ${planet.hostname}`.toLowerCase().includes(filters.query)) {
+        return false;
+    }
+
+    if (filters.yearFrom != null && (planet.disc_year == null || planet.disc_year < filters.yearFrom)) {
+        return false;
+    }
+
+    if (filters.yearTo != null && (planet.disc_year == null || planet.disc_year > filters.yearTo)) {
+        return false;
+    }
+
+    if (filters.metricKey && planet[filters.metricKey] == null) {
+        return false;
+    }
+
+    return true;
+}
+
+function groupPlanetsByHost(planets) {
+    const groups = new Map();
+
+    planets.forEach(planet => {
+        const host = planet.hostname || "Unknown host";
+        if (!groups.has(host)) {
+            groups.set(host, []);
+        }
+        groups.get(host).push(planet);
+    });
+
+    return Array.from(groups, ([host, hostPlanets]) => ({ host, planets: hostPlanets }));
+}
+
+function sortGalleryGroups(groups, sortBy) {
+    return groups.sort((a, b) => {
+        if (sortBy === "count") {
+            return b.planets.length - a.planets.length || a.host.localeCompare(b.host);
+        }
+
+        if (sortBy === "year") {
+            const firstYearA = Math.min(...a.planets.map(planet => planet.disc_year || Infinity));
+            const firstYearB = Math.min(...b.planets.map(planet => planet.disc_year || Infinity));
+            return firstYearA - firstYearB || a.host.localeCompare(b.host);
+        }
+
+        return a.host.localeCompare(b.host);
+    });
+}
+
+function renderGallery() {
     const gallery = document.querySelector("#spider-gallery");
     const count = document.querySelector("#gallery-count");
     if (!gallery || !count) {
         return;
     }
 
-    const planets = state.allPlanets.filter(planet => planetMatches(planet, query));
-    count.textContent = `${planets.length} planets shown`;
+    const filters = getGalleryFilters();
+    const planets = state.allPlanets.filter(planet => planetPassesGalleryFilters(planet, filters));
+    const groups = sortGalleryGroups(groupPlanetsByHost(planets), filters.sortBy);
+
+    count.textContent = `${planets.length} planets in ${groups.length} host groups`;
 
     if (!planets.length) {
-        gallery.innerHTML = `<div class="empty-state">No planets match the current filter.</div>`;
+        gallery.innerHTML = `<div class="empty-state">No planets match the current filters.</div>`;
         return;
     }
 
-    gallery.innerHTML = planets.map((planet, index) => `
-        <article class="mini-card">
-            <h2>${planet.pl_name}</h2>
-            <p>${planet.hostname}${planet.disc_year ? ` · ${planet.disc_year}` : ""}</p>
-            ${createSpiderSvg([planet], { size: 220, radius: 70, mini: true, color: colors[index % colors.length] })}
-        </article>
+    gallery.innerHTML = groups.map(group => `
+        <section class="host-group">
+            <header class="host-group-header">
+                <h2>${escapeHtml(group.host)}</h2>
+                <span>${group.planets.length} planet${group.planets.length === 1 ? "" : "s"}</span>
+            </header>
+            <div class="host-planet-grid">
+                ${group.planets.map((planet) => {
+                    const planetIndex = state.allPlanets.indexOf(planet);
+                    return `
+                    <article class="mini-card clickable-mini-card" role="button" tabindex="0" data-planet-index="${planetIndex}" aria-label="Open details for ${escapeHtml(planet.pl_name)}">
+                        <h3>${escapeHtml(planet.pl_name)}</h3>
+                        <p>${escapeHtml(planet.hostname)}${planet.disc_year ? ` &middot; ${planet.disc_year}` : ""}</p>
+                        ${createSpiderSvg([planet], { size: 220, radius: 70, mini: true, color: colors[planetIndex % colors.length] })}
+                    </article>
+                `;
+                }).join("")}
+            </div>
+        </section>
     `).join("");
+
+    gallery.querySelectorAll(".clickable-mini-card").forEach(card => {
+        card.addEventListener("click", () => openPlanetModal(Number(card.dataset.planetIndex)));
+        card.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openPlanetModal(Number(card.dataset.planetIndex));
+            }
+        });
+    });
+}
+
+function getModalVisibleMetrics() {
+    return metrics.filter(metric => !state.modalHiddenMetricKeys.has(metric.key));
+}
+
+function openPlanetModal(planetIndex) {
+    const planet = state.allPlanets[planetIndex];
+    const modal = document.querySelector("#planet-modal");
+
+    if (!planet || !modal) {
+        return;
+    }
+
+    state.modalPlanet = planet;
+    state.modalHiddenMetricKeys = new Set();
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    renderPlanetModal();
+}
+
+function closePlanetModal() {
+    const modal = document.querySelector("#planet-modal");
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    state.modalPlanet = null;
+}
+
+function renderPlanetModal() {
+    const content = document.querySelector("#planet-modal-content");
+    const planet = state.modalPlanet;
+
+    if (!content || !planet) {
+        return;
+    }
+
+    const visibleMetrics = getModalVisibleMetrics();
+    const knownCount = metrics.filter(metric => planet[metric.key] != null).length;
+
+    content.innerHTML = `
+        <div class="planet-modal-header">
+            <div>
+                <p class="eyebrow">${escapeHtml(planet.hostname)}</p>
+                <h2 id="planet-modal-title">${escapeHtml(planet.pl_name)}</h2>
+                <p class="subtitle">Discovered ${planet.disc_year || "unknown"}. ${knownCount} of ${metrics.length} tracked metrics are available.</p>
+            </div>
+        </div>
+        <div class="planet-modal-grid">
+            <div class="modal-chart">
+                ${createSpiderSvg([planet], { size: 560, radius: 160, metrics: visibleMetrics, color: colors[0] })}
+            </div>
+            <aside class="modal-axis-panel">
+                <h3>Visible data axes</h3>
+                <div class="modal-axis-list">
+                    ${metrics.map(metric => {
+                        const isHidden = state.modalHiddenMetricKeys.has(metric.key);
+                        const isMissing = planet[metric.key] == null;
+                        return `
+                            <label class="modal-axis-option ${isHidden ? "is-hidden" : ""} ${isMissing ? "is-missing" : ""}">
+                                <input type="checkbox" data-modal-axis="${metric.key}" ${isHidden ? "" : "checked"}>
+                                <span>
+                                    <strong>${escapeHtml(metric.label)}</strong>
+                                    <small>${formatValue(planet[metric.key], metric.unit)}</small>
+                                </span>
+                            </label>
+                        `;
+                    }).join("")}
+                </div>
+            </aside>
+        </div>
+        <div class="planet-data-section">
+            <h3>All data</h3>
+            <table class="planet-data-table">
+                <tbody>
+                    <tr><th>Planet</th><td>${escapeHtml(planet.pl_name)}</td></tr>
+                    <tr><th>Host star</th><td>${escapeHtml(planet.hostname)}</td></tr>
+                    <tr><th>Discovery year</th><td>${planet.disc_year || "Missing"}</td></tr>
+                    ${metrics.map(metric => `
+                        <tr>
+                            <th>${escapeHtml(metric.label)}</th>
+                            <td>${formatValue(planet[metric.key], metric.unit)} <span>${escapeHtml(metric.key)}, ${escapeHtml(metric.scale)}</span></td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    content.querySelectorAll("input[data-modal-axis]").forEach(input => {
+        input.addEventListener("change", () => {
+            if (input.checked) {
+                state.modalHiddenMetricKeys.delete(input.dataset.modalAxis);
+            } else {
+                state.modalHiddenMetricKeys.add(input.dataset.modalAxis);
+            }
+
+            renderPlanetModal();
+        });
+    });
+}
+
+function initGalleryFilters() {
+    const metricFilter = document.querySelector("#gallery-metric-filter");
+    if (metricFilter) {
+        metricFilter.innerHTML += metrics.map(metric => `<option value="${metric.key}">${metric.label}</option>`).join("");
+    }
+
+    ["#gallery-search", "#gallery-year-from", "#gallery-year-to", "#gallery-metric-filter", "#gallery-sort"].forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.addEventListener("input", renderGallery);
+            element.addEventListener("change", renderGallery);
+        }
+    });
+}
+
+function initGalleryModal() {
+    document.querySelectorAll("[data-close-modal]").forEach(element => {
+        element.addEventListener("click", closePlanetModal);
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && state.modalPlanet) {
+            closePlanetModal();
+        }
+    });
 }
 
 function initGalleryView() {
-    const search = document.querySelector("#gallery-search");
+    initGalleryFilters();
+    initGalleryModal();
     renderGallery();
-    search.addEventListener("input", () => renderGallery(search.value));
 }
 
 function init() {

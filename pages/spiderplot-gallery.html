@@ -31,10 +31,40 @@
                     <label class="control-label" for="gallery-search">Filter planets</label>
                     <input id="gallery-search" type="search" placeholder="Search by planet or host...">
                 </div>
+                <div>
+                    <label class="control-label" for="gallery-year-from">Discovery from</label>
+                    <input id="gallery-year-from" type="number" min="1989" max="2030" placeholder="Any year">
+                </div>
+                <div>
+                    <label class="control-label" for="gallery-year-to">Discovery to</label>
+                    <input id="gallery-year-to" type="number" min="1989" max="2030" placeholder="Any year">
+                </div>
+                <div>
+                    <label class="control-label" for="gallery-metric-filter">Required data</label>
+                    <select id="gallery-metric-filter">
+                        <option value="">Any available metric</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="control-label" for="gallery-sort">Sort groups by</label>
+                    <select id="gallery-sort">
+                        <option value="host">Host star name</option>
+                        <option value="count">Most planets per star</option>
+                        <option value="year">Earliest discovery</option>
+                    </select>
+                </div>
                 <p id="gallery-count" class="note"></p>
             </div>
             <div id="spider-gallery" class="spider-gallery"></div>
         </main>
+
+        <div id="planet-modal" class="planet-modal" aria-hidden="true">
+            <div class="planet-modal-backdrop" data-close-modal></div>
+            <section class="planet-modal-dialog panel" role="dialog" aria-modal="true" aria-labelledby="planet-modal-title">
+                <button type="button" class="modal-close" data-close-modal aria-label="Close planet details">Close</button>
+                <div id="planet-modal-content"></div>
+            </section>
+        </div>
     </div>
 </body>
 
