@@ -16,15 +16,15 @@
             <div class="eyebrow">Interactive Simulation</div>
             <h1>Habitable Zone Explorer</h1>
             <p class="subtitle">Discover where liquid water could exist. The "Goldilocks Zone" is calculated based on
-                the star's temperature and radius. Select a planet to see its orbit!</p>
+                the star's temperature and radius. Select a system to see all known planet orbits at once.</p>
         </header>
 
         <div class="main-layout">
             <aside class="control-panel panel">
                 <div class="control-block">
-                    <label for="planet-select">Select a System / Planet</label>
+                    <label for="planet-select">Select a System</label>
                     <select id="planet-select">
-                        <option value="">Loading planets...</option>
+                        <option value="">Loading systems...</option>
                     </select>
                 </div>
 
@@ -32,13 +32,15 @@
                     <h3>System Data</h3>
                     <div class="info-row"><span>Star Temp:</span> <strong id="val-teff"></strong></div>
                     <div class="info-row"><span>Star Radius:</span> <strong id="val-rad"></strong></div>
-                    <div class="info-row"><span>Planet Orbit:</span> <strong id="val-orb"></strong></div>
+                    <div class="info-row"><span>Planets:</span> <strong id="val-planets"></strong></div>
+                    <div class="info-row"><span>Orbit Range:</span> <strong id="val-orb"></strong></div>
                 </div>
 
                 <div class="control-block interactive-slider">
                     <label for="temp-slider">Experiment: Adjust Stellar Temp</label>
                     <input type="range" id="temp-slider" min="2000" max="10000" step="50" value="5000">
                     <div class="slider-val"><span id="temp-display">5000</span> K</div>
+                    <p class="note">Range for this system: <span id="temp-range-display">-</span></p>
                     <p class="note">Watch how the habitable zone shifts when the star gets hotter or cooler.</p>
                     <button id="reset-btn" class="primary-button">Reset to Actual</button>
                 </div>
