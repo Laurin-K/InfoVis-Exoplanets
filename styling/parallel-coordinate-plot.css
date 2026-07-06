@@ -101,13 +101,12 @@ h1 {
   display: grid;
   grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .chart-panel {
   display: flex;
   flex-direction: column;
-  height: clamp(540px, calc((100vh - 230px) * 1.5), 840px);
 }
 
 .control-panel,
@@ -139,7 +138,6 @@ h1 {
 #my_dataviz {
   width: 100%;
   flex: 1;
-  min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -156,7 +154,7 @@ h1 {
   gap: 8px;
   width: 100% !important;
   height: auto !important;
-  max-height: 28vh;
+  max-height: 50vh;
   margin-bottom: 14px;
   padding: 12px;
   overflow-y: auto;
