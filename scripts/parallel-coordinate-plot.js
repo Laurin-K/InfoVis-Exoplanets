@@ -16,7 +16,7 @@ let activeDimensions = [
 ];
 const brushes = {};
 let scaleMode = "auto";
-let colorField = "sy_snum";
+let colorField = "disc_year";
 let colorPalette = "lch-spectrum";
 
 const colorFieldOptions = [
@@ -795,28 +795,45 @@ function draw(dimensions)
         .style("pointer-events", "none")
         .style("display", "none");
 
+    const hoverHaloPath = hoverLayer.append("path")
+        .attr("class", "hover-halo-line")
+        .style("fill", "none")
+        .style("stroke", "rgba(255, 255, 255, 0.9)")
+        .style("stroke-linecap", "round")
+        .style("stroke-linejoin", "round")
+        .style("stroke-width", "7px")
+        .style("opacity", 0.78);
+
     const hoverDashedPath = hoverLayer.append("path")
         .attr("class", "line-dashed")
         .style("fill", "none")
         .style("stroke-dasharray", "4 4")
-        .style("stroke-width", "4.4px")
-        .style("opacity", 0.65);
+        .style("stroke-linecap", "round")
+        .style("stroke-linejoin", "round")
+        .style("stroke-width", "5px")
+        .style("opacity", 0.82);
 
     const hoverSolidPath = hoverLayer.append("path")
         .attr("class", "line-solid")
         .style("fill", "none")
-        .style("stroke-width", "4.4px")
+        .style("stroke-linecap", "round")
+        .style("stroke-linejoin", "round")
+        .style("stroke-width", "5px")
         .style("opacity", 1);
 
     hoverRenderer = {
         focus(d) {
             const stroke = colorConfig.color(d);
+            const dashedPath = backgroundPath(d);
+            const solidPath = foregroundPath(d);
             hoverLayer.style("display", null);
+            hoverHaloPath
+                .attr("d", solidPath);
             hoverDashedPath
-                .attr("d", backgroundPath(d))
+                .attr("d", dashedPath)
                 .style("stroke", stroke);
             hoverSolidPath
-                .attr("d", foregroundPath(d))
+                .attr("d", solidPath)
                 .style("stroke", stroke);
         },
         clear() {
