@@ -682,6 +682,14 @@ function draw(dimensions)
             .filter(Boolean);
     }
 
+    const projectedForegroundPoints = new WeakMap();
+    function getForegroundPoints(d) {
+        if (!projectedForegroundPoints.has(d)) {
+            projectedForegroundPoints.set(d, foregroundPoints(d));
+        }
+        return projectedForegroundPoints.get(d);
+    }
+
     function distanceToLine(points, px, py) {
         if (points.length === 1) {
             return Math.hypot(px - points[0][0], py - points[0][1]);
@@ -724,7 +732,7 @@ function draw(dimensions)
 
         data.forEach(d => {
             if (!passesActiveBrushes(d)) return;
-            const points = foregroundPoints(d);
+            const points = getForegroundPoints(d);
             if (points.length === 0) return;
 
             const distance = distanceToLine(points, px, py);
@@ -782,6 +790,40 @@ function draw(dimensions)
         .style("fill", "none")
         .style("stroke", d => colorConfig.color(d));
 
+    const hoverLayer = svg.append("g")
+        .attr("class", "hover-highlight-layer")
+        .style("pointer-events", "none")
+        .style("display", "none");
+
+    const hoverDashedPath = hoverLayer.append("path")
+        .attr("class", "line-dashed")
+        .style("fill", "none")
+        .style("stroke-dasharray", "4 4")
+        .style("stroke-width", "4.4px")
+        .style("opacity", 0.65);
+
+    const hoverSolidPath = hoverLayer.append("path")
+        .attr("class", "line-solid")
+        .style("fill", "none")
+        .style("stroke-width", "4.4px")
+        .style("opacity", 1);
+
+    hoverRenderer = {
+        focus(d) {
+            const stroke = colorConfig.color(d);
+            hoverLayer.style("display", null);
+            hoverDashedPath
+                .attr("d", backgroundPath(d))
+                .style("stroke", stroke);
+            hoverSolidPath
+                .attr("d", foregroundPath(d))
+                .style("stroke", stroke);
+        },
+        clear() {
+            hoverLayer.style("display", "none");
+        }
+    };
+
     // If a planet was already selected, re-apply the visual classes to the new paths
     if (selectedPlanet) {
         const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
@@ -797,15 +839,36 @@ function draw(dimensions)
     // Apply any existing brushes to the newly created lines
     updateLines();
 
+    let hoverFrame = null;
+    let latestHoverEvent = null;
+
     svg
-        .on("mousemove.hover", updateHoverFromPointer)
-        .on("mouseleave.hover", clearHoverFocus);
+        .on("mousemove.hover", function(event) {
+            latestHoverEvent = event;
+            if (hoverFrame) return;
+
+            hoverFrame = requestAnimationFrame(() => {
+                hoverFrame = null;
+                if (latestHoverEvent) {
+                    updateHoverFromPointer(latestHoverEvent);
+                }
+            });
+        })
+        .on("mouseleave.hover", function() {
+            if (hoverFrame) {
+                cancelAnimationFrame(hoverFrame);
+                hoverFrame = null;
+            }
+            latestHoverEvent = null;
+            clearHoverFocus();
+        });
 }
 
 //Single planet selection
 let selectedPlanet = null;
 let hoveredPlanetName = null;
 let hoverClearTimeout = null;
+let hoverRenderer = null;
 
 function focusDatalineOnHover(d) {
     if (hoverClearTimeout) {
@@ -813,28 +876,26 @@ function focusDatalineOnHover(d) {
         hoverClearTimeout = null;
     }
 
-    if (hoveredPlanetName === d.pl_name) return;
+    if (hoveredPlanetName === d.pl_name) {
+        if (hoverRenderer) hoverRenderer.focus(d);
+        return;
+    }
     hoveredPlanetName = d.pl_name;
 
-    d3.selectAll(".line-group")
-        .classed("hovered", function(lineData) { return lineData.pl_name === d.pl_name; })
-        .classed("hover-dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; })
-        .classed("dimmed", function(lineData) {
-            return selectedPlanet &&
-                lineData.pl_name !== selectedPlanet.pl_name &&
-                lineData.pl_name !== d.pl_name;
-        });
+    if (hoverRenderer) hoverRenderer.focus(d);
 }
 
 function clearHoverFocus(force = false) {
+    if (!hoveredPlanetName && !selectedPlanet) {
+        if (hoverRenderer) hoverRenderer.clear();
+        return;
+    }
+
     if (hoverClearTimeout) clearTimeout(hoverClearTimeout);
 
     const clear = () => {
         hoveredPlanetName = null;
-
-        d3.selectAll(".line-group")
-            .classed("hovered", false)
-            .classed("hover-dimmed", false);
+        if (hoverRenderer) hoverRenderer.clear();
 
         if (selectedPlanet) {
             d3.selectAll(".line-group")
