@@ -409,15 +409,19 @@ function draw(dimensions)
                 dimensions.sort(function(a, b) { return position(a) - position(b); });
                 x.domain(dimensions);
                 g.attr("transform", function(d) { return "translate(" + position(d) + ")"; });
-                svg.selectAll(".line-dashed").attr("d", backgroundPath);
-                svg.selectAll(".line-solid").attr("d", foregroundPath);
+                updateLines();
             })
             .on("end", function(event, d) {
                 delete dragging[d];
                 activeDimensions = [...dimensions]; // save new order
-                d3.select(this).transition().duration(500).attr("transform", "translate(" + x(d) + ")");
-                svg.selectAll(".line-dashed").transition().duration(500).attr("d", backgroundPath);
-                svg.selectAll(".line-solid").transition().duration(500).attr("d", foregroundPath);
+                d3.select(this).transition().duration(500).attr("transform", "translate(" + x(d) + ")")
+                  .on("end", updateLines); // Ensure it's perfectly aligned at the end
+                // During the transition we can't easily animate the canvas smoothly without a d3.timer, 
+                // but snapping at the end or redrawing is usually acceptable for performance.
+                d3.timer(function(elapsed) {
+                    updateLines();
+                    if (elapsed > 500) return true;
+                });
             })
         )
         .each(function(dim) {
@@ -619,58 +623,120 @@ function draw(dimensions)
         updateLines();
     }
 
-    function updateLines() {
-        svg.selectAll(".line-group")
-            .style("display", function(d) {
-                return passesActiveBrushes(d) ? null : "none";
-            });
-    }
-
     function passesActiveBrushes(d) {
         return dimensions.every(dim => {
             if (!brushes[dim]) return true;
 
             const value = d[dim];
-            if (value == null) return false; // Hide if missing on brushed axis
+            if (value == null) return false;
 
             const [min, max] = brushes[dim];
             return value >= min && value <= max;
         });
     }
 
-    const foregroundLine = d3.line().defined(d => d !== null);
-    function foregroundPath(d) {
-        return foregroundLine(dimensions.map(dim => {
-            if (d[dim] != null) return [position(dim), y[dim](d[dim])];
-            return null;
-        }));
-    }
-
-    const dashedLine = d3.line();
-    function backgroundPath(d) {
-        let points = [];
-        let firstValidY = null;
-        let lastValidY = null;
+    function updateLines() {
+        ctx.clearRect(-margin.left, -margin.top, canvas.node().width, canvas.node().height);
         
-        dimensions.forEach((dim) => {
-            if (d[dim] != null) {
-                let yPos = y[dim](d[dim]);
-                if (firstValidY === null) firstValidY = yPos;
-                lastValidY = yPos;
-                points.push([position(dim), yPos]);
+        data.forEach(d => {
+            if (!passesActiveBrushes(d)) return;
+            
+            const isSelected = selectedPlanet && selectedPlanet.pl_name === d.pl_name;
+            const isHovered = hoveredPlanetName === d.pl_name;
+            let isDimmed = false;
+            
+            if (selectedPlanet) {
+                isDimmed = !isSelected && !isHovered;
+            } else if (hoveredPlanetName) {
+                isDimmed = !isHovered;
+            }
+            
+            let alpha = isDimmed ? 0.1 : 0.4;
+            let lineWidth = 1;
+            
+            const points = dimensions.map(dim => d[dim] != null ? [position(dim), y[dim](d[dim])] : null);
+            const validPoints = points.filter(p => p !== null);
+            
+            if (validPoints.length > 0) {
+                ctx.strokeStyle = colorConfig.color(d);
+                
+                if (validPoints.length > 1) {
+                    ctx.setLineDash([4, 4]);
+                    ctx.globalAlpha = alpha * 0.5;
+                    ctx.lineWidth = lineWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(validPoints[0][0], validPoints[0][1]);
+                    for (let i = 1; i < validPoints.length; i++) {
+                        ctx.lineTo(validPoints[i][0], validPoints[i][1]);
+                    }
+                    ctx.stroke();
+                }
+                
+                ctx.setLineDash([]);
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                let inSegment = false;
+                for (let i = 0; i < points.length; i++) {
+                    if (points[i] !== null) {
+                        if (!inSegment) {
+                            ctx.moveTo(points[i][0], points[i][1]);
+                            inSegment = true;
+                        } else {
+                            ctx.lineTo(points[i][0], points[i][1]);
+                        }
+                    } else {
+                        inSegment = false;
+                    }
+                }
+                ctx.stroke();
             }
         });
-
-        if (points.length === 0) return "";
-
-        if (d[dimensions[0]] == null) {
-            points.unshift([position(dimensions[0]), firstValidY]);
+        
+        const highlightDraw = (d, isActiveSelection) => {
+            if (!passesActiveBrushes(d)) return;
+            const points = dimensions.map(dim => d[dim] != null ? [position(dim), y[dim](d[dim])] : null);
+            const validPoints = points.filter(p => p !== null);
+            if (validPoints.length > 0) {
+                ctx.strokeStyle = colorConfig.color(d);
+                if (validPoints.length > 1) {
+                    ctx.setLineDash([4, 4]);
+                    ctx.globalAlpha = isActiveSelection ? 1.0 : 0.8;
+                    ctx.lineWidth = isActiveSelection ? 3 : 2;
+                    ctx.beginPath();
+                    ctx.moveTo(validPoints[0][0], validPoints[0][1]);
+                    for (let i = 1; i < validPoints.length; i++) {
+                        ctx.lineTo(validPoints[i][0], validPoints[i][1]);
+                    }
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+                ctx.globalAlpha = isActiveSelection ? 1.0 : 0.8;
+                ctx.lineWidth = isActiveSelection ? 3 : 2;
+                ctx.beginPath();
+                let inSegment = false;
+                for (let i = 0; i < points.length; i++) {
+                    if (points[i] !== null) {
+                        if (!inSegment) {
+                            ctx.moveTo(points[i][0], points[i][1]);
+                            inSegment = true;
+                        } else {
+                            ctx.lineTo(points[i][0], points[i][1]);
+                        }
+                    } else {
+                        inSegment = false;
+                    }
+                }
+                ctx.stroke();
+            }
+        };
+        
+        if (hoveredPlanetName && (!selectedPlanet || hoveredPlanetName !== selectedPlanet.pl_name)) {
+            const h = data.find(d => d.pl_name === hoveredPlanetName);
+            if (h) highlightDraw(h, false);
         }
-        if (d[dimensions[dimensions.length - 1]] == null) {
-            points.push([position(dimensions[dimensions.length - 1]), lastValidY]);
+        if (selectedPlanet) {
+            highlightDraw(selectedPlanet, true);
         }
-
-        return dashedLine(points);
     }
 
     function foregroundPoints(d) {
@@ -758,37 +824,24 @@ function draw(dimensions)
     const colorConfig = buildColorScale(data);
     updateColorLegend(colorConfig);
 
-    const lineGroups = svg.selectAll(".line-group")
-        .data(data)
-        .enter()
-        .append("g")
-        .attr("class", "line-group")
-        .on("click", function(event, d) {
-            event.stopPropagation();
-            selectDataline(d);
-        });
+    // Make selectDataline redraw the canvas so click from rect updates lines
+    window.selectDataline = function(d) {
+        selectedPlanet = d;
+        clearHoverFocus(true);
+        updateLines();
+        updateInfocard(d);
+    };
 
-    lineGroups.append("path")
-        .attr("class", "line-dashed")
-        .attr("d", backgroundPath)
-        .style("fill", "none")
-        .style("stroke", d => colorConfig.color(d))
-        .style("stroke-dasharray", "4 4")
-        .style("opacity", 0.4);
+    window.deselectAllDatalines = function() {
+        selectedPlanet = null;
+        hoveredPlanetName = null;
+        updateLines();
+        clearInfocard();
+    };
 
-    lineGroups.append("path")
-        .attr("class", "line-solid")
-        .attr("d", foregroundPath)
-        .style("fill", "none")
-        .style("stroke", d => colorConfig.color(d));
-
-    // If a planet was already selected, re-apply the visual classes to the new paths
     if (selectedPlanet) {
         const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
-        if (exists) {
-            lineGroups.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
-                      .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
-        } else {
+        if (!exists) {
             clearInfocard();
             selectedPlanet = null;
         }
@@ -816,14 +869,7 @@ function focusDatalineOnHover(d) {
     if (hoveredPlanetName === d.pl_name) return;
     hoveredPlanetName = d.pl_name;
 
-    d3.selectAll(".line-group")
-        .classed("hovered", function(lineData) { return lineData.pl_name === d.pl_name; })
-        .classed("hover-dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; })
-        .classed("dimmed", function(lineData) {
-            return selectedPlanet &&
-                lineData.pl_name !== selectedPlanet.pl_name &&
-                lineData.pl_name !== d.pl_name;
-        });
+    updateLines();
 }
 
 function clearHoverFocus(force = false) {
@@ -831,16 +877,7 @@ function clearHoverFocus(force = false) {
 
     const clear = () => {
         hoveredPlanetName = null;
-
-        d3.selectAll(".line-group")
-            .classed("hovered", false)
-            .classed("hover-dimmed", false);
-
-        if (selectedPlanet) {
-            d3.selectAll(".line-group")
-                .classed("selected", function(lineData) { return lineData.pl_name === selectedPlanet.pl_name; })
-                .classed("dimmed", function(lineData) { return lineData.pl_name !== selectedPlanet.pl_name; });
-        }
+        updateLines();
     };
 
     if (force) {
@@ -850,27 +887,7 @@ function clearHoverFocus(force = false) {
     }
 }
 
-function selectDataline(d) {
-    selectedPlanet = d;
-    clearHoverFocus(true);
-
-    d3.selectAll(".line-group")
-        .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
-        .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
-
-    updateInfocard(d);
-}
-
-function deselectAllDatalines() {
-    selectedPlanet = null;
-    hoveredPlanetName = null;
-
-    d3.selectAll(".line-group")
-        .classed("selected", false)
-        .classed("dimmed", false);
-
-    clearInfocard();
-}
+// selectDataline and deselectAllDatalines are bound to window earlier
 
 //Infocard with selected planet
 function updateInfocard(d) {

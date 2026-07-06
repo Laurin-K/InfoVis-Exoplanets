@@ -31,7 +31,8 @@ const state = {
     metricOrder: metrics.map(metric => metric.key),
     hiddenMetricKeys: new Set(),
     modalPlanet: null,
-    modalHiddenMetricKeys: new Set()
+    modalHiddenMetricKeys: new Set(),
+    galleryLimit: 40
 };
 
 function getMetricsByOrder() {
@@ -716,18 +717,30 @@ function sortGalleryGroups(groups, sortBy) {
     });
 }
 
-function renderGallery() {
+function renderGallery(resetLimit = true) {
     const gallery = document.querySelector("#spider-gallery");
     const count = document.querySelector("#gallery-count");
     if (!gallery || !count) {
         return;
     }
 
+    if (resetLimit === true || resetLimit instanceof Event) {
+        state.galleryLimit = 40;
+    }
+
     const filters = getGalleryFilters();
     const planets = state.allPlanets.filter(planet => planetPassesGalleryFilters(planet, filters));
-    const groups = sortGalleryGroups(groupPlanetsByHost(planets), filters.sortBy);
+    const allGroups = sortGalleryGroups(groupPlanetsByHost(planets), filters.sortBy);
 
-    count.textContent = `${planets.length} planets in ${groups.length} host groups`;
+    let currentPlanetCount = 0;
+    let groupIndex = 0;
+    for (groupIndex = 0; groupIndex < allGroups.length; groupIndex++) {
+        if (currentPlanetCount >= state.galleryLimit) break;
+        currentPlanetCount += allGroups[groupIndex].planets.length;
+    }
+    const groups = allGroups.slice(0, Math.max(1, groupIndex));
+
+    count.textContent = `${planets.length} planets in ${allGroups.length} host groups`;
 
     if (!planets.length) {
         gallery.innerHTML = `<div class="empty-state">No planets match the current filters.</div>`;
@@ -754,6 +767,37 @@ function renderGallery() {
             </div>
         </section>
     `).join("");
+
+    if (currentPlanetCount < planets.length) {
+        gallery.insertAdjacentHTML("beforeend", `<div id="gallery-observer-target" style="height: 20px; width: 100%;"></div>`);
+        setupGalleryObserver();
+    }
+
+    gallery.querySelectorAll(".clickable-mini-card").forEach(card => {
+        card.addEventListener("click", () => openPlanetModal(Number(card.dataset.planetIndex)));
+        card.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openPlanetModal(Number(card.dataset.planetIndex));
+            }
+        });
+    });
+}
+
+function setupGalleryObserver() {
+    const target = document.querySelector("#gallery-observer-target");
+    if (!target) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            state.galleryLimit += 40;
+            observer.disconnect();
+            renderGallery(false);
+        }
+    }, { rootMargin: "200px" });
+
+    observer.observe(target);
+}
 
     gallery.querySelectorAll(".clickable-mini-card").forEach(card => {
         card.addEventListener("click", () => openPlanetModal(Number(card.dataset.planetIndex)));

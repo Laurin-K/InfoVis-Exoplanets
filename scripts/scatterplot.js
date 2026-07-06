@@ -522,13 +522,33 @@ function drawScatterplot() {
   );
   const colorScale = createColorScale();
 
-  const svg = d3
-    .select(container)
-    .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMidYMid meet")
-    .style("width", "100%")
-    .style("height", "auto");
+  const wrapper = d3.select(container)
+      .append("div")
+      .style("position", "relative")
+      .style("width", "100%")
+      .style("height", "auto")
+      .style("aspect-ratio", `${width} / ${height}`);
+
+  const canvas = wrapper.append("canvas")
+      .attr("width", innerWidth)
+      .attr("height", innerHeight)
+      .style("position", "absolute")
+      .style("top", `${(margin.top / height) * 100}%`)
+      .style("left", `${(margin.left / width) * 100}%`)
+      .style("width", `${(innerWidth / width) * 100}%`)
+      .style("height", `${(innerHeight / height) * 100}%`)
+      .style("pointer-events", "none");
+
+  const ctx = canvas.node().getContext("2d");
+
+  const svg = wrapper.append("svg")
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .style("position", "absolute")
+      .style("top", "0")
+      .style("left", "0")
+      .style("width", "100%")
+      .style("height", "100%");
 
   const defs = svg.append("defs");
   defs
@@ -545,7 +565,7 @@ function drawScatterplot() {
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  root
+  const eventRect = root
     .append("rect")
     .attr("x", 0)
     .attr("y", 0)
@@ -553,7 +573,8 @@ function drawScatterplot() {
     .attr("height", innerHeight)
     .attr("rx", 16)
     .attr("fill", "rgba(5, 11, 21, 0.55)")
-    .attr("stroke", "rgba(154, 178, 217, 0.12)");
+    .attr("stroke", "rgba(154, 178, 217, 0.12)")
+    .style("cursor", "crosshair");
 
   root
     .append("g")
@@ -609,35 +630,82 @@ function drawScatterplot() {
 
   const chart = root.append("g").attr("clip-path", "url(#scatter-clip)");
 
-  const dots = chart.append("g");
+  let currentTransform = d3.zoomIdentity;
 
-  dots
-    .selectAll("circle")
-    .data(validData)
-    .join("circle")
-    .attr("class", "point")
-    .attr("cx", (d) => xScaleInfo.scale(d[state.xField]))
-    .attr("cy", (d) => yScaleInfo.scale(d[state.yField]))
-    .attr("r", width < 640 ? 3 : 3.8)
-    .attr("fill", (d) =>
-      colorScale && isValidNumber(d[state.colorField])
-        ? colorScale(d[state.colorField])
-        : "#8ea0b8",
-    )
-    .attr("fill-opacity", 0.86)
-    .attr("stroke", "rgba(5, 10, 20, 0.72)")
-    .attr("stroke-width", 1)
-    .on("mouseenter", function (event, datum) {
-      d3.select(this).attr("stroke-width", 2);
-      showTooltip(event, datum);
-    })
-    .on("mousemove", function (event, datum) {
-      showTooltip(event, datum);
-    })
-    .on("mouseleave", function () {
-      d3.select(this).attr("stroke-width", 1);
-      hideTooltip();
+  function renderCanvas() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    const radius = (width < 640 ? 3 : 3.8) / currentTransform.k;
+    const strokeWidth = 1 / currentTransform.k;
+    const newX = currentTransform.rescaleX(xScaleInfo.scale);
+    const newY = currentTransform.rescaleY(yScaleInfo.scale);
+
+    validData.forEach(d => {
+        const cx = newX(d[state.xField]);
+        const cy = newY(d[state.yField]);
+        const color = colorScale && isValidNumber(d[state.colorField]) ? colorScale(d[state.colorField]) : "#8ea0b8";
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.globalAlpha = 0.86;
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = "rgba(5, 10, 20, 0.72)";
+        ctx.stroke();
     });
+  }
+
+  const hoverPoint = chart.append("circle")
+      .attr("class", "hover-point")
+      .style("display", "none")
+      .attr("stroke", "rgba(5, 10, 20, 0.72)");
+
+  eventRect.on("mousemove", function(event) {
+      const [mx, my] = d3.pointer(event);
+      const newX = currentTransform.rescaleX(xScaleInfo.scale);
+      const newY = currentTransform.rescaleY(yScaleInfo.scale);
+      
+      let closest = null;
+      let minDistSq = Infinity;
+      
+      for (let i = 0; i < validData.length; i++) {
+          const d = validData[i];
+          const px = newX(d[state.xField]);
+          const py = newY(d[state.yField]);
+          const distSq = (px - mx) ** 2 + (py - my) ** 2;
+          
+          if (distSq < minDistSq) {
+              minDistSq = distSq;
+              closest = d;
+          }
+      }
+      
+      if (minDistSq < 400 && closest) {
+          const cx = newX(closest[state.xField]);
+          const cy = newY(closest[state.yField]);
+          const color = colorScale && isValidNumber(closest[state.colorField]) ? colorScale(closest[state.colorField]) : "#8ea0b8";
+          
+          hoverPoint
+              .style("display", null)
+              .attr("cx", cx)
+              .attr("cy", cy)
+              .attr("fill", color)
+              .attr("fill-opacity", 0.86)
+              .attr("r", (width < 640 ? 5 : 5.5) / currentTransform.k)
+              .attr("stroke-width", 2 / currentTransform.k);
+              
+          showTooltip(event, closest);
+      } else {
+          hoverPoint.style("display", "none");
+          hideTooltip();
+      }
+  });
+
+  eventRect.on("mouseleave", function() {
+      hoverPoint.style("display", "none");
+      hideTooltip();
+  });
 
   const zoom = d3
     .zoom()
@@ -647,7 +715,7 @@ function drawScatterplot() {
       [innerWidth, innerHeight],
     ])
     .on("zoom", (event) => {
-      dots.attr("transform", event.transform);
+      currentTransform = event.transform;
 
       const newX = event.transform.rescaleX(xScaleInfo.scale);
       const newY = event.transform.rescaleY(yScaleInfo.scale);
@@ -658,10 +726,13 @@ function drawScatterplot() {
       xAxis.selectAll(".tick line").attr("y2", 8);
       yAxis.selectAll(".tick line").attr("x2", -8);
 
-      dots
-        .selectAll("circle")
-        .attr("r", (width < 640 ? 3 : 3.8) / event.transform.k)
-        .attr("stroke-width", 1 / event.transform.k);
+      if (hoverPoint.style("display") !== "none") {
+         hoverPoint
+           .attr("r", (width < 640 ? 5 : 5.5) / currentTransform.k)
+           .attr("stroke-width", 2 / currentTransform.k);
+      }
+
+      renderCanvas();
     });
 
   svg.call(zoom);
@@ -741,6 +812,9 @@ function drawScatterplot() {
     xScaleInfo.type,
     yScaleInfo.type,
   );
+
+  // Initial render of canvas
+  renderCanvas();
 }
 
 function scheduleRedraw() {
