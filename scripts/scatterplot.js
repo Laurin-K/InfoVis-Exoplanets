@@ -430,12 +430,31 @@ function drawScatterplot() {
     const yScaleInfo = createScale(validData.map(d => d[state.yField]), [innerHeight, 0]);
     const colorScale = createYearColorScale();
 
-    const svg = d3.select(container)
-        .append("svg")
+    const wrapper = d3.select(container)
+        .append("div")
+        .style("position", "relative")
+        .style("width", "100%")
+        .style("height", "auto")
+        .style("aspect-ratio", `${width} / ${height}`);
+
+    const canvas = wrapper.append("canvas")
+        .attr("width", innerWidth)
+        .attr("height", innerHeight)
+        .style("position", "absolute")
+        .style("top", `${(margin.top / height) * 100}%`)
+        .style("left", `${(margin.left / width) * 100}%`)
+        .style("width", `${(innerWidth / width) * 100}%`)
+        .style("height", `${(innerHeight / height) * 100}%`)
+        .style("pointer-events", "none");
+
+    const svg = wrapper.append("svg")
         .attr("viewBox", `0 0 ${width} ${height}`)
         .attr("preserveAspectRatio", "xMidYMid meet")
+        .style("position", "absolute")
+        .style("top", "0")
+        .style("left", "0")
         .style("width", "100%")
-        .style("height", "auto");
+        .style("height", "100%");
 
     const defs = svg.append("defs");
     defs.append("clipPath")
@@ -450,14 +469,14 @@ function drawScatterplot() {
     const root = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    root.append("rect")
+    const eventRect = root.append("rect")
         .attr("x", 0)
         .attr("y", 0)
         .attr("width", innerWidth)
         .attr("height", innerHeight)
-        .attr("rx", 16)
         .attr("fill", "rgba(5, 11, 21, 0.55)")
-        .attr("stroke", "rgba(154, 178, 217, 0.12)");
+        .attr("stroke", "rgba(154, 178, 217, 0.12)")
+        .style("cursor", "crosshair");
 
     root.append("g")
         .attr("class", "grid")
@@ -519,35 +538,73 @@ function drawScatterplot() {
         .attr("text-anchor", "middle")
         .text(state.yField);
 
-    const chart = root.append("g")
-        .attr("clip-path", "url(#scatter-clip)");
+    const ctx = canvas.node().getContext("2d");
+    const radius = width < 640 ? 3 : 3.8;
+    
+    validData.forEach(d => {
+        const cx = xScaleInfo.scale(d[state.xField]);
+        const cy = yScaleInfo.scale(d[state.yField]);
+        const color = colorScale && isValidNumber(d.disc_year) ? colorScale(d.disc_year) : "#8ea0b8";
 
-    chart.selectAll("circle")
-        .data(validData)
-        .join("circle")
-        .attr("class", "point")
-        .attr("cx", d => xScaleInfo.scale(d[state.xField]))
-        .attr("cy", d => yScaleInfo.scale(d[state.yField]))
-        .attr("r", width < 640 ? 3 : 3.8)
-        .attr("fill", d => colorScale && isValidNumber(d.disc_year) ? colorScale(d.disc_year) : "#8ea0b8")
-        .attr("fill-opacity", 0.86)
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.globalAlpha = 0.86;
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(5, 10, 20, 0.72)";
+        ctx.stroke();
+    });
+
+    const hoverPoint = root.append("circle")
+        .attr("class", "hover-point")
+        .style("display", "none")
+        .attr("r", width < 640 ? 5 : 5.5)
         .attr("stroke", "rgba(5, 10, 20, 0.72)")
-        .attr("stroke-width", 1)
-        .on("mouseenter", function(event, datum) {
-            d3.select(this)
-                .attr("r", width < 640 ? 5 : 5.5)
-                .attr("stroke-width", 2);
-            showTooltip(event, datum);
-        })
-        .on("mousemove", function(event, datum) {
-            showTooltip(event, datum);
-        })
-        .on("mouseleave", function() {
-            d3.select(this)
-                .attr("r", width < 640 ? 3 : 3.8)
-                .attr("stroke-width", 1);
+        .attr("stroke-width", 2);
+
+    eventRect.on("mousemove", function(event) {
+        const [mx, my] = d3.pointer(event);
+        
+        let closest = null;
+        let minDistSq = Infinity;
+        
+        for (let i = 0; i < validData.length; i++) {
+            const d = validData[i];
+            const px = xScaleInfo.scale(d[state.xField]);
+            const py = yScaleInfo.scale(d[state.yField]);
+            const distSq = (px - mx) ** 2 + (py - my) ** 2;
+            
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                closest = d;
+            }
+        }
+        
+        if (minDistSq < 400 && closest) {
+            const cx = xScaleInfo.scale(closest[state.xField]);
+            const cy = yScaleInfo.scale(closest[state.yField]);
+            const color = colorScale && isValidNumber(closest.disc_year) ? colorScale(closest.disc_year) : "#8ea0b8";
+            
+            hoverPoint
+                .style("display", null)
+                .attr("cx", cx)
+                .attr("cy", cy)
+                .attr("fill", color)
+                .attr("fill-opacity", 0.86);
+                
+            showTooltip(event, closest);
+        } else {
+            hoverPoint.style("display", "none");
             hideTooltip();
-        });
+        }
+    });
+
+    eventRect.on("mouseleave", function() {
+        hoverPoint.style("display", "none");
+        hideTooltip();
+    });
 
     updateLegend();
     updatePlotNote(validData.length, state.data.length, xScaleInfo.type, yScaleInfo.type);

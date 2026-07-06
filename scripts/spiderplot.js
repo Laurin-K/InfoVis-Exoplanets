@@ -26,7 +26,8 @@ const state = {
     allPlanets: [],
     visiblePlanets: [],
     selected: [],
-    domains: new Map()
+    domains: new Map(),
+    galleryLimit: 40
 };
 
 function parseDelimited(text, delimiter) {
@@ -346,11 +347,15 @@ function initCompareView() {
     });
 }
 
-function renderGallery(query = "") {
+function renderGallery(query = "", resetLimit = true) {
     const gallery = document.querySelector("#spider-gallery");
     const count = document.querySelector("#gallery-count");
     if (!gallery || !count) {
         return;
+    }
+
+    if (resetLimit) {
+        state.galleryLimit = 40;
     }
 
     const planets = state.allPlanets.filter(planet => planetMatches(planet, query));
@@ -361,19 +366,40 @@ function renderGallery(query = "") {
         return;
     }
 
-    gallery.innerHTML = planets.map((planet, index) => `
+    const visiblePlanets = planets.slice(0, state.galleryLimit);
+
+    gallery.innerHTML = visiblePlanets.map((planet, index) => `
         <article class="mini-card">
             <h2>${planet.pl_name}</h2>
             <p>${planet.hostname}${planet.disc_year ? ` · ${planet.disc_year}` : ""}</p>
             ${createSpiderSvg([planet], { size: 220, radius: 70, mini: true, color: colors[index % colors.length] })}
         </article>
     `).join("");
+
+    if (planets.length > state.galleryLimit) {
+        const trigger = document.createElement("div");
+        trigger.id = "load-more-trigger";
+        trigger.style.padding = "20px";
+        trigger.style.textAlign = "center";
+        trigger.style.width = "100%";
+        trigger.textContent = "Scroll for more...";
+        gallery.appendChild(trigger);
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                observer.disconnect();
+                state.galleryLimit += 40;
+                renderGallery(query, false);
+            }
+        });
+        observer.observe(trigger);
+    }
 }
 
 function initGalleryView() {
     const search = document.querySelector("#gallery-search");
     renderGallery();
-    search.addEventListener("input", () => renderGallery(search.value));
+    search.addEventListener("input", () => renderGallery(search.value, true));
 }
 
 function init() {

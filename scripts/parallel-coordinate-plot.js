@@ -135,21 +135,73 @@ function draw(dimensions)
     const width = 800 - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
-    const svg = d3.select("#my_dataviz")
-        .append("svg")
+    const wrapper = d3.select("#my_dataviz")
+        .append("div")
+        .style("position", "relative")
+        .style("width", width + margin.left + margin.right + "px")
+        .style("height", height + margin.top + margin.bottom + "px");
+
+    const canvas = wrapper.append("canvas")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
+        .style("position", "absolute")
+        .style("top", 0)
+        .style("left", 0)
+        .style("pointer-events", "none");
+
+    const ctx = canvas.node().getContext("2d");
+    ctx.translate(margin.left, margin.top);
+
+    const svg = wrapper.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .style("position", "absolute")
+        .style("top", 0)
+        .style("left", 0)
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Add transparent background for clicking to deselect
+    function pointToSegmentDistSq(px, py, x1, y1, x2, y2) {
+        const l2 = (x1 - x2)**2 + (y1 - y2)**2;
+        if (l2 === 0) return (px - x1)**2 + (py - y1)**2;
+        let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return (px - (x1 + t * (x2 - x1)))**2 + (py - (y1 + t * (y2 - y1)))**2;
+    }
+
     svg.append("rect")
         .attr("width", width)
         .attr("height", height)
         .style("fill", "none")
         .style("pointer-events", "all")
-        .on("click", function() {
-            deselectAllDatalines();
+        .on("click", function(event) {
+            const [mx, my] = d3.pointer(event);
+            let closest = null;
+            let minDistSq = Infinity;
+            
+            data.forEach(d => {
+                if (!isVisible(d)) return;
+                let distSq = Infinity;
+                for (let i = 0; i < dimensions.length - 1; i++) {
+                    const dim1 = dimensions[i];
+                    const dim2 = dimensions[i+1];
+                    const x1 = x(dim1), y1 = y[dim1](d[dim1]);
+                    const x2 = x(dim2), y2 = y[dim2](d[dim2]);
+                    const dSq = pointToSegmentDistSq(mx, my, x1, y1, x2, y2);
+                    if (dSq < distSq) distSq = dSq;
+                }
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    closest = d;
+                }
+            });
+            
+            if (minDistSq < 25 && closest) {
+                selectDataline(closest);
+            } else {
+                deselectAllDatalines();
+            }
         });
 
     // Y-Axis positions
@@ -270,84 +322,88 @@ function draw(dimensions)
         updateLines();
     }
 
-    function updateLines() {
-
-        svg.selectAll(".line")
-            .style("display", function(d) {
-
-                return dimensions.every(dim => {
-
-                    if (!brushes[dim]) return true;
-
-                    const value = d[dim];
-                    const [min, max] = brushes[dim];
-
-                    return value >= min && value <= max;
-
-                }) ? null : "none";
-
-            });
-    }
-    function path(d) {
-        return line(dimensions.map(dim => [
-            x(dim),
-            y[dim](d[dim])
-        ]));
+    function isVisible(d) {
+        return dimensions.every(dim => {
+            if (!brushes[dim]) return true;
+            const value = d[dim];
+            const [min, max] = brushes[dim];
+            return value >= min && value <= max;
+        });
     }
 
     var color = d3.scaleOrdinal()
         .domain(["1", "2", "3", "4", "5"])
-        .range([ "#440154ff", "#21908dff", "#fde725ff", "#123456ff", "#abcdefff"])
+        .range([ "#440154ff", "#21908dff", "#fde725ff", "#123456ff", "#abcdefff"]);
 
-    const paths = svg.selectAll(".line")
-        .data(data)
-        .enter()
-        .append("path")
-        .attr("class", "line")
-        .attr("d", path)
-        .style("fill", "none")
-        .style("stroke", function(d){ return( color(d.sy_snum))})
-        .style("opacity", 0.8)
-        .on("click", function(event, d) {
-            event.stopPropagation();
-            selectDataline(d);
+    function updateLines() {
+        ctx.clearRect(-margin.left, -margin.top, canvas.node().width, canvas.node().height);
+        
+        data.forEach(d => {
+            if (!isVisible(d)) return;
+            
+            let isDimmed = selectedPlanet && selectedPlanet.pl_name !== d.pl_name;
+            let isSelected = selectedPlanet && selectedPlanet.pl_name === d.pl_name;
+
+            ctx.beginPath();
+            dimensions.forEach((dim, i) => {
+                const px = x(dim);
+                const py = y[dim](d[dim]);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            
+            ctx.lineWidth = isSelected ? 3 : 1;
+            ctx.strokeStyle = color(d.sy_snum);
+            ctx.globalAlpha = isDimmed ? 0.1 : (isSelected ? 1.0 : 0.8);
+            ctx.stroke();
         });
+        
+        if (selectedPlanet && isVisible(selectedPlanet)) {
+            ctx.beginPath();
+            dimensions.forEach((dim, i) => {
+                const px = x(dim);
+                const py = y[dim](selectedPlanet[dim]);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color(selectedPlanet.sy_snum);
+            ctx.globalAlpha = 1.0;
+            ctx.stroke();
+        }
+    }
 
-    // If a planet was already selected, re-apply the visual classes to the new paths
+    // Call updateLines initially
+    updateLines();
+
+    // If a planet was already selected, update Infocard (visual classes are handled by updateLines)
     if (selectedPlanet) {
         const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
-        if (exists) {
-            paths.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
-                 .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
-        } else {
+        if (!exists) {
             clearInfocard();
             selectedPlanet = null;
         }
     }
+
+    // Make selectDataline and deselectAllDatalines redraw canvas
+    window.selectDataline = function(d) {
+        selectedPlanet = d;
+        updateLines();
+        updateInfocard(d);
+    };
+
+    window.deselectAllDatalines = function() {
+        selectedPlanet = null;
+        updateLines();
+        clearInfocard();
+    };
 }
 
 //Single planet selection
 let selectedPlanet = null;
 
-function selectDataline(d) {
-    selectedPlanet = d;
+// selectDataline and deselectAllDatalines are now assigned to window in draw()
 
-    d3.selectAll(".line")
-        .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
-        .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
-
-    updateInfocard(d);
-}
-
-function deselectAllDatalines() {
-    selectedPlanet = null;
-
-    d3.selectAll(".line")
-        .classed("selected", false)
-        .classed("dimmed", false);
-
-    clearInfocard();
-}
 
 //Infocard with selected planet
 function updateInfocard(d) {
