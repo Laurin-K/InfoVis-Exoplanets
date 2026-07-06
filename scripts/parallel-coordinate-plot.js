@@ -227,6 +227,7 @@ function buildColorScale(data) {
 }
 
 function formatLegendValue(value) {
+    if (colorField === "disc_year") return d3.format("d")(Math.round(value));
     if (Math.abs(value) >= 1000) return d3.format(".2s")(value);
     if (Math.abs(value) >= 10) return d3.format(".0f")(value);
     return d3.format(".2~f")(value);
