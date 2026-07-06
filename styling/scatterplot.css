@@ -263,6 +263,36 @@ body::before {
     opacity: 1;
 }
 
+.scatter-minimap {
+    pointer-events: none;
+}
+
+.scatter-minimap-bg {
+    fill: rgba(4, 8, 16, 0.82);
+    stroke: rgba(113, 234, 223, 0.42);
+    stroke-width: 1;
+    filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.35));
+}
+
+.scatter-minimap-label {
+    fill: rgba(237, 243, 255, 0.86);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.scatter-minimap-point {
+    opacity: 0.45;
+    stroke: none;
+}
+
+.scatter-minimap-viewport {
+    fill: rgba(113, 234, 223, 0.16);
+    stroke: #71eadf;
+    stroke-width: 1.6;
+}
+
 .plot-note {
     margin-top: 10px;
     min-height: 1.5em;

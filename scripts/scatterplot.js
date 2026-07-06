@@ -639,6 +639,99 @@ function drawScatterplot() {
       hideTooltip();
     });
 
+  const minimapWidth = width < 640 ? 118 : 156;
+  const minimapHeight = width < 640 ? 86 : 108;
+  const minimapPadding = 12;
+  const minimapX = Math.max(8, innerWidth - minimapWidth - 14);
+  const minimapY = 14;
+  const minimapXScale = xScaleInfo.scale
+    .copy()
+    .range([minimapPadding, minimapWidth - minimapPadding]);
+  const minimapYScale = yScaleInfo.scale
+    .copy()
+    .range([minimapHeight - minimapPadding, minimapPadding]);
+
+  defs
+    .append("clipPath")
+    .attr("id", "scatter-minimap-clip")
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", minimapWidth)
+    .attr("height", minimapHeight)
+    .attr("rx", 12);
+
+  const minimap = root
+    .append("g")
+    .attr("class", "scatter-minimap")
+    .attr("transform", `translate(${minimapX},${minimapY})`);
+
+  minimap
+    .append("rect")
+    .attr("class", "scatter-minimap-bg")
+    .attr("width", minimapWidth)
+    .attr("height", minimapHeight)
+    .attr("rx", 12);
+
+  minimap
+    .append("g")
+    .attr("clip-path", "url(#scatter-minimap-clip)")
+    .selectAll("circle")
+    .data(validData)
+    .join("circle")
+    .attr("class", "scatter-minimap-point")
+    .attr("cx", (d) => minimapXScale(d[state.xField]))
+    .attr("cy", (d) => minimapYScale(d[state.yField]))
+    .attr("r", width < 640 ? 1 : 1.25)
+    .attr("fill", (d) =>
+      colorScale && isValidNumber(d[state.colorField])
+        ? colorScale(d[state.colorField])
+        : "#8ea0b8",
+    );
+
+  minimap
+    .append("text")
+    .attr("class", "scatter-minimap-label")
+    .attr("x", 10)
+    .attr("y", 15)
+    .text("Zoom overview");
+
+  const minimapViewport = minimap
+    .append("rect")
+    .attr("class", "scatter-minimap-viewport")
+    .attr("rx", 5);
+
+  function updateMinimapViewport(transform) {
+    const [x0, y0] = transform.invert([0, 0]);
+    const [x1, y1] = transform.invert([innerWidth, innerHeight]);
+
+    const viewX0 = Math.max(0, Math.min(innerWidth, Math.min(x0, x1)));
+    const viewX1 = Math.max(0, Math.min(innerWidth, Math.max(x0, x1)));
+    const viewY0 = Math.max(0, Math.min(innerHeight, Math.min(y0, y1)));
+    const viewY1 = Math.max(0, Math.min(innerHeight, Math.max(y0, y1)));
+
+    const miniX0 =
+      minimapPadding +
+      (viewX0 / innerWidth) * (minimapWidth - minimapPadding * 2);
+    const miniX1 =
+      minimapPadding +
+      (viewX1 / innerWidth) * (minimapWidth - minimapPadding * 2);
+    const miniY0 =
+      minimapPadding +
+      (viewY0 / innerHeight) * (minimapHeight - minimapPadding * 2);
+    const miniY1 =
+      minimapPadding +
+      (viewY1 / innerHeight) * (minimapHeight - minimapPadding * 2);
+
+    minimapViewport
+      .attr("x", miniX0)
+      .attr("y", miniY0)
+      .attr("width", Math.max(2, miniX1 - miniX0))
+      .attr("height", Math.max(2, miniY1 - miniY0));
+  }
+
+  updateMinimapViewport(d3.zoomIdentity);
+
   const zoom = d3
     .zoom()
     .scaleExtent([0.5, 20])
@@ -662,6 +755,8 @@ function drawScatterplot() {
         .selectAll("circle")
         .attr("r", (width < 640 ? 3 : 3.8) / event.transform.k)
         .attr("stroke-width", 1 / event.transform.k);
+
+      updateMinimapViewport(event.transform);
     });
 
   svg.call(zoom);
