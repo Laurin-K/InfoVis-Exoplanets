@@ -308,9 +308,9 @@ function draw(dimensions)
     const container = document.querySelector("#my_dataviz");
     const containerRect = container.getBoundingClientRect();
     
-    // Expand to fit container, with a minimum size fallback
+    // Expand to fit the viewport-sized chart panel without forcing page scroll.
     const targetWidth = Math.max(800, containerRect.width || 800);
-    const targetHeight = Math.max(460, containerRect.height || 460);
+    const targetHeight = Math.max(540, containerRect.height || 540);
 
     const margin = { top: 50, right: 80, bottom: 110, left: 80 };
     const width = targetWidth - margin.left - margin.right;
