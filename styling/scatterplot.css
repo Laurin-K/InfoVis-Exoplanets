@@ -218,6 +218,24 @@ body::before {
     height: auto;
 }
 
+.scatterplot-stage {
+    position: relative;
+    width: 100%;
+}
+
+#my_dataviz .scatterplot-stage svg,
+.scatterplot-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.scatterplot-canvas {
+    pointer-events: none;
+}
+
 .axis path,
 .axis line {
     stroke: rgba(165, 184, 217, 0.35);
@@ -248,19 +266,16 @@ body::before {
     letter-spacing: 0.08em;
 }
 
-.point {
-    transition: opacity 0.15s ease, r 0.15s ease, stroke-width 0.15s ease;
-    cursor: pointer;
-}
-
 .action-btn.active {
     background: #8fe3c7;
     color: #050a14;
     border-color: #8fe3c7;
 }
 
-.point:hover {
-    opacity: 1;
+.scatterplot-hit-layer {
+    fill: transparent;
+    pointer-events: all;
+    cursor: crosshair;
 }
 
 .scatter-minimap {

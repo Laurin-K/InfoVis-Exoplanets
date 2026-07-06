@@ -476,6 +476,22 @@ function hideTooltip() {
   tooltip.classed("is-visible", false);
 }
 
+function drawRoundedRect(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.lineTo(x + width - r, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + r);
+  context.lineTo(x + width, y + height - r);
+  context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  context.lineTo(x + r, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - r);
+  context.lineTo(x, y + r);
+  context.quadraticCurveTo(x, y, x + r, y);
+  context.closePath();
+}
+
 function drawScatterplot() {
   const container = document.querySelector("#my_dataviz");
   if (!container || !state.data.length) {
@@ -521,14 +537,36 @@ function drawScatterplot() {
     [innerHeight, 0],
   );
   const colorScale = createColorScale();
+  const pointRadius = width < 640 ? 3 : 3.8;
+  const visiblePadding = 24;
+  let pendingZoomFrame = null;
+  let latestZoomTransform = d3.zoomIdentity;
+  let currentVisibleData = [];
+
+  const stage = d3
+    .select(container)
+    .append("div")
+    .attr("class", "scatterplot-stage")
+    .style("aspect-ratio", `${width} / ${height}`);
+
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const canvas = stage
+    .append("canvas")
+    .attr("class", "scatterplot-canvas")
+    .attr("width", Math.floor(width * pixelRatio))
+    .attr("height", Math.floor(height * pixelRatio))
+    .style("width", "100%")
+    .style("height", "100%");
+  const context = canvas.node().getContext("2d");
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
   const svg = d3
-    .select(container)
+    .select(stage.node())
     .append("svg")
     .attr("viewBox", `0 0 ${width} ${height}`)
     .attr("preserveAspectRatio", "xMidYMid meet")
     .style("width", "100%")
-    .style("height", "auto");
+    .style("height", "100%");
 
   const defs = svg.append("defs");
   defs
@@ -552,7 +590,7 @@ function drawScatterplot() {
     .attr("width", innerWidth)
     .attr("height", innerHeight)
     .attr("rx", 16)
-    .attr("fill", "rgba(5, 11, 21, 0.55)")
+    .attr("fill", "transparent")
     .attr("stroke", "rgba(154, 178, 217, 0.12)");
 
   root
@@ -609,35 +647,94 @@ function drawScatterplot() {
 
   const chart = root.append("g").attr("clip-path", "url(#scatter-clip)");
 
-  const dots = chart.append("g");
-
-  dots
-    .selectAll("circle")
-    .data(validData)
-    .join("circle")
-    .attr("class", "point")
-    .attr("cx", (d) => xScaleInfo.scale(d[state.xField]))
-    .attr("cy", (d) => yScaleInfo.scale(d[state.yField]))
-    .attr("r", width < 640 ? 3 : 3.8)
-    .attr("fill", (d) =>
+  const plottedData = validData.map((d, index) => ({
+    ...d,
+    __plotId: `${d.pl_name || d.hostname || "planet"}-${index}`,
+    __x: xScaleInfo.scale(d[state.xField]),
+    __y: yScaleInfo.scale(d[state.yField]),
+    __color:
       colorScale && isValidNumber(d[state.colorField])
         ? colorScale(d[state.colorField])
         : "#8ea0b8",
-    )
-    .attr("fill-opacity", 0.86)
-    .attr("stroke", "rgba(5, 10, 20, 0.72)")
-    .attr("stroke-width", 1)
-    .on("mouseenter", function (event, datum) {
-      d3.select(this).attr("stroke-width", 2);
-      showTooltip(event, datum);
+  }));
+
+  function visibleDataForTransform(transform) {
+    const [x0, y0] = transform.invert([-visiblePadding, -visiblePadding]);
+    const [x1, y1] = transform.invert([
+      innerWidth + visiblePadding,
+      innerHeight + visiblePadding,
+    ]);
+    const minX = Math.min(x0, x1);
+    const maxX = Math.max(x0, x1);
+    const minY = Math.min(y0, y1);
+    const maxY = Math.max(y0, y1);
+
+    return plottedData.filter(
+      (d) => d.__x >= minX && d.__x <= maxX && d.__y >= minY && d.__y <= maxY,
+    );
+  }
+
+  function renderVisiblePoints(transform) {
+    const visibleData = visibleDataForTransform(transform);
+    currentVisibleData = visibleData;
+
+    context.clearRect(0, 0, width, height);
+
+    context.save();
+    drawRoundedRect(context, margin.left, margin.top, innerWidth, innerHeight, 16);
+    context.fillStyle = "rgba(5, 11, 21, 0.55)";
+    context.fill();
+    context.clip();
+
+    context.globalAlpha = 0.86;
+    for (const d of visibleData) {
+      const x = margin.left + transform.applyX(d.__x);
+      const y = margin.top + transform.applyY(d.__y);
+
+      context.beginPath();
+      context.arc(x, y, pointRadius, 0, Math.PI * 2);
+      context.fillStyle = d.__color;
+      context.fill();
+    }
+    context.restore();
+  }
+
+  function nearestPointAt(screenX, screenY, transform) {
+    const maxDistance = Math.max(8, pointRadius + 5);
+    const maxDistanceSquared = maxDistance * maxDistance;
+    let nearest = null;
+    let nearestDistance = maxDistanceSquared;
+
+    for (const d of currentVisibleData) {
+      const dx = transform.applyX(d.__x) - screenX;
+      const dy = transform.applyY(d.__y) - screenY;
+      const distance = dx * dx + dy * dy;
+
+      if (distance < nearestDistance) {
+        nearest = d;
+        nearestDistance = distance;
+      }
+    }
+
+    return nearest;
+  }
+
+  chart
+    .append("rect")
+    .attr("class", "scatterplot-hit-layer")
+    .attr("width", innerWidth)
+    .attr("height", innerHeight)
+    .on("mousemove", function (event) {
+      const [x, y] = d3.pointer(event, this);
+      const nearest = nearestPointAt(x, y, latestZoomTransform);
+
+      if (nearest) {
+        showTooltip(event, nearest);
+      } else {
+        hideTooltip();
+      }
     })
-    .on("mousemove", function (event, datum) {
-      showTooltip(event, datum);
-    })
-    .on("mouseleave", function () {
-      d3.select(this).attr("stroke-width", 1);
-      hideTooltip();
-    });
+    .on("mouseleave", hideTooltip);
 
   const minimapWidth = width < 640 ? 118 : 156;
   const minimapHeight = width < 640 ? 86 : 108;
@@ -650,6 +747,10 @@ function drawScatterplot() {
   const minimapYScale = yScaleInfo.scale
     .copy()
     .range([minimapHeight - minimapPadding, minimapPadding]);
+  const minimapSampleStep = Math.max(1, Math.ceil(plottedData.length / 1200));
+  const minimapData = plottedData.filter(
+    (d, index) => index % minimapSampleStep === 0,
+  );
 
   defs
     .append("clipPath")
@@ -677,17 +778,13 @@ function drawScatterplot() {
     .append("g")
     .attr("clip-path", "url(#scatter-minimap-clip)")
     .selectAll("circle")
-    .data(validData)
+    .data(minimapData)
     .join("circle")
     .attr("class", "scatter-minimap-point")
     .attr("cx", (d) => minimapXScale(d[state.xField]))
     .attr("cy", (d) => minimapYScale(d[state.yField]))
     .attr("r", width < 640 ? 1 : 1.25)
-    .attr("fill", (d) =>
-      colorScale && isValidNumber(d[state.colorField])
-        ? colorScale(d[state.colorField])
-        : "#8ea0b8",
-    );
+    .attr("fill", (d) => d.__color);
 
   minimap
     .append("text")
@@ -731,6 +828,34 @@ function drawScatterplot() {
   }
 
   updateMinimapViewport(d3.zoomIdentity);
+  renderVisiblePoints(d3.zoomIdentity);
+
+  function renderZoomState(transform) {
+    const newX = transform.rescaleX(xScaleInfo.scale);
+    const newY = transform.rescaleY(yScaleInfo.scale);
+
+    xAxis.call(d3.axisBottom(newX).ticks(6));
+    yAxis.call(d3.axisLeft(newY).ticks(6));
+
+    xAxis.selectAll(".tick line").attr("y2", 8);
+    yAxis.selectAll(".tick line").attr("x2", -8);
+
+    renderVisiblePoints(transform);
+    updateMinimapViewport(transform);
+  }
+
+  function scheduleZoomRender(transform) {
+    latestZoomTransform = transform;
+
+    if (pendingZoomFrame) {
+      return;
+    }
+
+    pendingZoomFrame = window.requestAnimationFrame(() => {
+      pendingZoomFrame = null;
+      renderZoomState(latestZoomTransform);
+    });
+  }
 
   const zoom = d3
     .zoom()
@@ -740,23 +865,7 @@ function drawScatterplot() {
       [innerWidth, innerHeight],
     ])
     .on("zoom", (event) => {
-      dots.attr("transform", event.transform);
-
-      const newX = event.transform.rescaleX(xScaleInfo.scale);
-      const newY = event.transform.rescaleY(yScaleInfo.scale);
-
-      xAxis.call(d3.axisBottom(newX).ticks(6));
-      yAxis.call(d3.axisLeft(newY).ticks(6));
-
-      xAxis.selectAll(".tick line").attr("y2", 8);
-      yAxis.selectAll(".tick line").attr("x2", -8);
-
-      dots
-        .selectAll("circle")
-        .attr("r", (width < 640 ? 3 : 3.8) / event.transform.k)
-        .attr("stroke-width", 1 / event.transform.k);
-
-      updateMinimapViewport(event.transform);
+      scheduleZoomRender(event.transform);
     });
 
   svg.call(zoom);
