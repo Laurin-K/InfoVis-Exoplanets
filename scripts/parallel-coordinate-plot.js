@@ -250,6 +250,27 @@ function formatLegendValue(value) {
     return d3.format(".2~f")(value);
 }
 
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => {
+        switch (char) {
+            case "&": return "&amp;";
+            case "<": return "&lt;";
+            case ">": return "&gt;";
+            case '"': return "&quot;";
+            case "'": return "&#39;";
+            default: return char;
+        }
+    });
+}
+
+function formatDimensionValue(dim, value) {
+    if (value === undefined || value === null || value === "") return "n/a";
+    if (typeof value !== "number" || Number.isNaN(value)) return String(value);
+    if (dim === "disc_year" || isIntegerCountField(dim)) return d3.format("d")(Math.round(value));
+    if (Math.abs(value) >= 1000 || Math.abs(value) < 0.01) return d3.format(".4~g")(value);
+    return d3.format(".3~f")(value);
+}
+
 function updateColorLegend(colorConfig) {
     const legend = d3.select("#color-legend");
     legend.selectAll("*").remove();
@@ -887,14 +908,133 @@ function draw(dimensions)
         }
     };
 
+    const selectedValueLayer = svg.append("g")
+        .attr("class", "selected-value-layer")
+        .style("pointer-events", "none");
+
+    selectedValueRenderer = {
+        render(d) {
+            const valueData = dimensions
+                .map(dim => ({
+                    dim,
+                    label: formatDimensionValue(dim, d[dim]),
+                    value: d[dim]
+                }))
+                .filter(item => item.value !== undefined && item.value !== null && item.value !== "");
+
+            const markers = selectedValueLayer
+                .selectAll(".selected-value-marker")
+                .data(valueData, item => item.dim)
+                .join(
+                    enter => {
+                        const marker = enter.append("g")
+                            .attr("class", "selected-value-marker");
+
+                        marker.append("circle")
+                            .attr("r", 4.5);
+
+                        marker.append("rect")
+                            .attr("class", "selected-value-box")
+                            .attr("rx", 5)
+                            .attr("ry", 5);
+
+                        marker.append("text")
+                            .attr("x", 8)
+                            .attr("y", -8);
+
+                        return marker;
+                    },
+                    update => update,
+                    exit => exit.remove()
+                );
+
+            markers
+                .attr("transform", item => `translate(${position(item.dim)},${y[item.dim](item.value)})`);
+
+            markers.select("text")
+                .text(item => item.label)
+                .attr("text-anchor", item => position(item.dim) > width - 70 ? "end" : "start")
+                .attr("x", item => position(item.dim) > width - 70 ? -8 : 8);
+
+            markers.each(function() {
+                const marker = d3.select(this);
+                const textNode = marker.select("text").node();
+                if (!textNode) return;
+
+                const bbox = textNode.getBBox();
+                marker.select(".selected-value-box")
+                    .attr("x", bbox.x - 5)
+                    .attr("y", bbox.y - 3)
+                    .attr("width", bbox.width + 10)
+                    .attr("height", bbox.height + 6);
+            });
+
+            const selectedPoints = foregroundPoints(d);
+            const firstSelectedPoint = selectedPoints.length ? selectedPoints[0] : [0, 18];
+            const namePoint = [-margin.left + 8, Math.max(20, Math.min(height - 18, firstSelectedPoint[1]))];
+
+            const nameLabel = selectedValueLayer
+                .selectAll(".selected-planet-name")
+                .data([d]);
+
+            const nameEnter = nameLabel.enter()
+                .append("g")
+                .attr("class", "selected-planet-name");
+
+            nameEnter.append("rect")
+                .attr("rx", 7)
+                .attr("ry", 7);
+
+            nameEnter.append("text")
+                .attr("y", 4)
+                .text(planet => planet.pl_name || "Unknown Planet");
+
+            const mergedNameLabel = nameEnter.merge(nameLabel);
+            mergedNameLabel
+                .attr("transform", () => {
+                    return `translate(${namePoint[0]},${namePoint[1]})`;
+                });
+
+            mergedNameLabel.select("text")
+                .text(planet => planet.pl_name || "Unknown Planet");
+
+            mergedNameLabel.each(function() {
+                const label = d3.select(this);
+                const textNode = label.select("text").node();
+                if (!textNode) return;
+
+                const bbox = textNode.getBBox();
+                const labelWidth = bbox.width + 18;
+                const offsetX = 0;
+
+                label.select("text")
+                    .attr("x", offsetX + 9);
+
+                label.select("rect")
+                    .attr("x", offsetX)
+                    .attr("y", bbox.y - 6)
+                    .attr("width", labelWidth)
+                    .attr("height", bbox.height + 12);
+            });
+        },
+        clear() {
+            selectedValueLayer.selectAll("*").remove();
+        }
+    };
+
     // If a planet was already selected, re-apply the visual classes to the new paths
     if (selectedPlanet) {
         const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
         if (exists) {
             lineGroups.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
                       .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
+            const currentSelected = data.find(d => d.pl_name === selectedPlanet.pl_name);
+            selectedPlanet = currentSelected;
+            updateInfocard(currentSelected);
+            selectedValueRenderer.render(currentSelected);
         } else {
             clearInfocard();
+            if (selectedValueRenderer) selectedValueRenderer.clear();
             selectedPlanet = null;
         }
     }
@@ -932,6 +1072,7 @@ let selectedPlanet = null;
 let hoveredPlanetName = null;
 let hoverClearTimeout = null;
 let hoverRenderer = null;
+let selectedValueRenderer = null;
 
 function focusDatalineOnHover(d) {
     if (hoverClearTimeout) {
@@ -982,6 +1123,7 @@ function selectDataline(d) {
         .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
         .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
 
+    if (selectedValueRenderer) selectedValueRenderer.render(d);
     updateInfocard(d);
 }
 
@@ -993,6 +1135,7 @@ function deselectAllDatalines() {
         .classed("selected", false)
         .classed("dimmed", false);
 
+    if (selectedValueRenderer) selectedValueRenderer.clear();
     clearInfocard();
 }
 
@@ -1002,6 +1145,41 @@ function updateInfocard(d) {
     const contentDiv = document.getElementById("infocard-content");
 
     if (!card || !contentDiv) return;
+
+    const dataFields = fullData.columns || Object.keys(d);
+    const safeFields = dataFields.filter(key => !key.startsWith("__"));
+
+    let selectedHtml = `
+        <div class="infocard-layout">
+            <aside class="infocard-planet-name">
+                <p class="infocard-kicker">Selected planet</p>
+                <h2>${escapeHtml(d.pl_name || "Unknown Planet")}</h2>
+                <p>${escapeHtml(d.hostname || "Unknown host")}</p>
+            </aside>
+            <div class="infocard-data">
+                <p class="infocard-note">All available data fields for the selected planet.</p>
+                <table>
+    `;
+
+    safeFields.forEach(dim => {
+        const label = columnExplanations[dim] ? columnExplanations[dim].name : dim;
+        selectedHtml += `
+            <tr>
+                <td>${escapeHtml(label)}</td>
+                <td>${escapeHtml(formatDimensionValue(dim, d[dim]))}</td>
+            </tr>
+        `;
+    });
+
+    selectedHtml += `
+                </table>
+            </div>
+        </div>
+    `;
+
+    contentDiv.innerHTML = selectedHtml;
+    card.style.display = "block";
+    return;
 
     let html = `<h2>${d.pl_name || "Unknown Planet"}</h2>`;
     html += `<table>`;

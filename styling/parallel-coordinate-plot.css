@@ -482,6 +482,39 @@ input:checked + .slider::before {
   opacity: 1 !important;
 }
 
+.selected-value-marker circle {
+  fill: #f3b26d;
+  stroke: rgba(4, 8, 16, 0.95);
+  stroke-width: 2px;
+}
+
+.selected-value-box {
+  fill: rgba(4, 8, 16, 0.88);
+  stroke: rgba(243, 178, 109, 0.72);
+  stroke-width: 1px;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
+}
+
+.selected-value-marker text {
+  fill: #fff7e8;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.selected-planet-name rect {
+  fill: rgba(4, 8, 16, 0.92);
+  stroke: rgba(143, 227, 199, 0.82);
+  stroke-width: 1px;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+}
+
+.selected-planet-name text {
+  fill: #edf3ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .infocard {
   display: none;
   margin-top: 18px;
@@ -491,9 +524,50 @@ input:checked + .slider::before {
 }
 
 .infocard h2 {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--text);
   font-size: 1.35rem;
+}
+
+.infocard-kicker,
+.infocard-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.infocard-note {
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.infocard-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.infocard-planet-name {
+  position: sticky;
+  top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(154, 178, 217, 0.18);
+  border-radius: 18px;
+  background: rgba(4, 8, 16, 0.55);
+}
+
+.infocard-planet-name p:last-child {
+  margin: 10px 0 0;
+  color: var(--accent);
+  line-height: 1.4;
+}
+
+.infocard-data {
+  min-width: 0;
 }
 
 .infocard table {
@@ -586,6 +660,14 @@ input:checked + .slider::before {
     display: flex;
     justify-content: center;
     width: 100%;
+  }
+
+  .infocard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .infocard-planet-name {
+    position: static;
   }
 }
 
