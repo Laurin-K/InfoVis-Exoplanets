@@ -26,15 +26,26 @@ const integerDimensions = new Set([
   "disc_year",
 ]);
 
+const logColorFields = new Set(["pl_bmasse"]);
+
+const discoveryYearMin = 1992;
+const discoveryYearMax = 2026;
+const discoveryYearPlaybackDelay = 700;
+
 const state = {
   xField: "pl_orbsmax",
   yField: "pl_bmasse",
   colorField: "disc_year",
+  discoveryYearUpperBound: discoveryYearMax,
   data: [],
   glossaryRows: [],
   glossaryByColumn: new Map(),
   yearDomain: [],
   resizeTimer: null,
+  yearFilterFrame: null,
+  yearPlaybackTimer: null,
+  isYearPlaybackRunning: false,
+  isYearSliderDragging: false,
   interactionMode: "pan",
 };
 
@@ -161,16 +172,37 @@ function createScale(values, range) {
   };
 }
 
-function updateHeaderMetric(validCount, totalCount) {
+function getYearFilteredData() {
+  return state.data.filter(
+    (d) =>
+      isValidNumber(d.disc_year) &&
+      d.disc_year >= discoveryYearMin &&
+      d.disc_year <= state.discoveryYearUpperBound,
+  );
+}
+
+function updateHeaderMetric(validCount, filteredCount, totalCount) {
   d3.select("#chart-summary").html(`
             <strong>${d3.format(",")(validCount)}</strong>
-            <span>of ${d3.format(",")(totalCount)} records plotted</span>
+            <span>of ${d3.format(",")(filteredCount)} filtered records plotted</span>
+            <span>${d3.format(",")(totalCount)} records total</span>
         `);
 }
 
-function updatePlotNote(validCount, totalCount, xScaleType, yScaleType) {
-  const missingCount = totalCount - validCount;
+function updatePlotNote(validCount, filteredCount, totalCount, xScaleType, yScaleType) {
+  const missingCount = filteredCount - validCount;
+  const yearFilteredOutCount = totalCount - filteredCount;
   const notes = [];
+
+  notes.push(
+    `Discovery year filter: ${discoveryYearMin} to ${state.discoveryYearUpperBound}.`,
+  );
+
+  if (yearFilteredOutCount > 0) {
+    notes.push(
+      `${d3.format(",")(yearFilteredOutCount)} rows are outside this year range or have no discovery year.`,
+    );
+  }
 
   if (missingCount > 0) {
     notes.push(
@@ -185,12 +217,16 @@ function updatePlotNote(validCount, totalCount, xScaleType, yScaleType) {
   d3.select("#plot-note").text(notes.join(" "));
 }
 
-function updateLegend() {
+function updateLegend(data = state.data) {
   const legend = d3.select("#dynamic-legend");
   legend.html("");
 
   const field = state.colorField;
-  const values = state.data.map((d) => d[field]).filter(isValidNumber);
+  const values = data
+    .map((d) => d[field])
+    .filter((value) =>
+      logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value),
+    );
   if (!values.length) {
     legend.html("<div class='legend-caption'>No color data</div>");
     return;
@@ -233,6 +269,7 @@ function updateLegend() {
       .text(fieldLabel(field));
   } else {
     const [minVal, maxVal] = d3.extent(values);
+    const useLogColor = logColorFields.has(field) && minVal > 0 && maxVal > 0;
     const bar = legend.append("div").attr("class", "legend-bar");
     const grad = bar
       .append("div")
@@ -243,8 +280,12 @@ function updateLegend() {
     if (minVal === maxVal) {
       grad.style("background", d3.interpolateViridis(0.55));
     } else {
+      const logMin = useLogColor ? Math.log10(minVal) : null;
+      const logMax = useLogColor ? Math.log10(maxVal) : null;
       const stops = d3.range(0, 1.01, 0.2).map((step) => {
-        const value = minVal + (maxVal - minVal) * step;
+        const value = useLogColor
+          ? 10 ** (logMin + (logMax - logMin) * step)
+          : minVal + (maxVal - minVal) * step;
         return `${d3.interpolateViridis(step)} ${Math.round(step * 100)}%`;
       });
       grad.style("background", `linear-gradient(90deg, ${stops.join(", ")})`);
@@ -264,13 +305,17 @@ function updateLegend() {
       .append("div")
       .attr("class", "legend-caption")
       .style("margin-top", "8px")
-      .text(fieldLabel(field));
+      .text(`${fieldLabel(field)}${useLogColor ? " (log scale)" : ""}`);
   }
 }
 
-function createColorScale() {
+function createColorScale(data = state.data) {
   const field = state.colorField;
-  const values = state.data.map((d) => d[field]).filter(isValidNumber);
+  const values = data
+    .map((d) => d[field])
+    .filter((value) =>
+      logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value),
+    );
   if (!values.length) return () => "#8ea0b8";
 
   if (field === "sy_snum" || field === "sy_pnum") {
@@ -279,6 +324,13 @@ function createColorScale() {
   } else {
     const [minVal, maxVal] = d3.extent(values);
     if (minVal === maxVal) return () => d3.interpolateViridis(0.55);
+
+    if (logColorFields.has(field) && minVal > 0 && maxVal > 0) {
+      const scale = d3
+        .scaleSequential(d3.interpolateViridis)
+        .domain([Math.log10(minVal), Math.log10(maxVal)]);
+      return (val) => (isValidNumber(val) && val > 0 ? scale(Math.log10(val)) : "#8ea0b8");
+    }
 
     const scale = d3
       .scaleSequential(d3.interpolateViridis)
@@ -290,6 +342,99 @@ function createColorScale() {
 function syncSelectValues() {
   d3.select("#x-select").property("value", state.xField);
   d3.select("#y-select").property("value", state.yField);
+}
+
+function syncDiscoveryYearControl() {
+  d3.select("#discovery-year-slider").property(
+    "value",
+    state.discoveryYearUpperBound,
+  );
+  d3.select("#discovery-year-value").text(state.discoveryYearUpperBound);
+  d3.select("#discovery-year-range-label").text(
+    `bis ${state.discoveryYearUpperBound}`,
+  );
+
+  d3.select("#discovery-year-play")
+    .classed("active", state.isYearPlaybackRunning)
+    .text(state.isYearPlaybackRunning ? "Pause" : "Play");
+}
+
+function scheduleYearFilterRedraw() {
+  if (state.yearFilterFrame) {
+    window.cancelAnimationFrame(state.yearFilterFrame);
+  }
+
+  state.yearFilterFrame = window.requestAnimationFrame(() => {
+    state.yearFilterFrame = null;
+    drawScatterplot();
+  });
+}
+
+function updateDiscoveryYearUpperBound(year) {
+  state.discoveryYearUpperBound = Math.max(
+    discoveryYearMin,
+    Math.min(discoveryYearMax, Math.round(year)),
+  );
+  syncDiscoveryYearControl();
+}
+
+function setDiscoveryYearUpperBound(year) {
+  updateDiscoveryYearUpperBound(year);
+  scheduleYearFilterRedraw();
+}
+
+function commitDiscoveryYearSliderValue(value) {
+  stopDiscoveryYearPlayback();
+  setDiscoveryYearUpperBound(value);
+}
+
+function stopDiscoveryYearPlayback() {
+  const wasRunning = state.isYearPlaybackRunning || state.yearPlaybackTimer;
+
+  if (state.yearPlaybackTimer) {
+    window.clearInterval(state.yearPlaybackTimer);
+    state.yearPlaybackTimer = null;
+  }
+
+  state.isYearPlaybackRunning = false;
+
+  if (wasRunning) {
+    syncDiscoveryYearControl();
+  }
+}
+
+function startDiscoveryYearPlayback() {
+  stopDiscoveryYearPlayback();
+
+  if (state.discoveryYearUpperBound >= discoveryYearMax) {
+    state.discoveryYearUpperBound = discoveryYearMin;
+  }
+
+  state.isYearPlaybackRunning = true;
+  syncDiscoveryYearControl();
+  scheduleYearFilterRedraw();
+
+  state.yearPlaybackTimer = window.setInterval(() => {
+    if (state.discoveryYearUpperBound >= discoveryYearMax) {
+      stopDiscoveryYearPlayback();
+      return;
+    }
+
+    const nextYear = state.discoveryYearUpperBound + 1;
+    setDiscoveryYearUpperBound(nextYear);
+
+    if (nextYear >= discoveryYearMax) {
+      stopDiscoveryYearPlayback();
+    }
+  }, discoveryYearPlaybackDelay);
+}
+
+function toggleDiscoveryYearPlayback() {
+  if (state.isYearPlaybackRunning) {
+    stopDiscoveryYearPlayback();
+  } else {
+    startDiscoveryYearPlayback();
+  }
 }
 
 function ensureDistinctAxes(changedAxis) {
@@ -386,6 +531,40 @@ function buildControls() {
     state.colorField = this.value;
     drawScatterplot();
   });
+
+  const discoveryYearSlider = d3.select("#discovery-year-slider");
+  discoveryYearSlider
+    .attr("min", discoveryYearMin)
+    .attr("max", discoveryYearMax)
+    .attr("step", 1);
+
+  syncDiscoveryYearControl();
+
+  discoveryYearSlider.on("pointerdown", function () {
+    state.isYearSliderDragging = true;
+    stopDiscoveryYearPlayback();
+  });
+
+  discoveryYearSlider.on("input", function () {
+    const nextYear = +this.value;
+    stopDiscoveryYearPlayback();
+    setDiscoveryYearUpperBound(nextYear);
+  });
+
+  discoveryYearSlider.on("change", function () {
+    const nextYear = +this.value;
+    state.isYearSliderDragging = false;
+    commitDiscoveryYearSliderValue(nextYear);
+  });
+
+  discoveryYearSlider.on("pointerup pointercancel", function () {
+    if (!state.isYearSliderDragging) return;
+    const nextYear = +this.value;
+    state.isYearSliderDragging = false;
+    commitDiscoveryYearSliderValue(nextYear);
+  });
+
+  d3.select("#discovery-year-play").on("click", toggleDiscoveryYearPlayback);
 }
 
 function buildGlossaryTable(rows) {
@@ -515,28 +694,33 @@ function drawScatterplot() {
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  const validData = state.data.filter(
+  const scaleData = state.data.filter(
+    (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
+  );
+  const filteredData = getYearFilteredData();
+  const validData = filteredData.filter(
     (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
   );
 
-  updateHeaderMetric(validData.length, state.data.length);
+  updateHeaderMetric(validData.length, filteredData.length, state.data.length);
 
-  if (!validData.length) {
+  if (!scaleData.length) {
     d3.select("#plot-note").text(
       "No records have values for both selected axes.",
     );
+    updateLegend(filteredData);
     return;
   }
 
   const xScaleInfo = createScale(
-    validData.map((d) => d[state.xField]),
+    scaleData.map((d) => d[state.xField]),
     [0, innerWidth],
   );
   const yScaleInfo = createScale(
-    validData.map((d) => d[state.yField]),
+    scaleData.map((d) => d[state.yField]),
     [innerHeight, 0],
   );
-  const colorScale = createColorScale();
+  const colorScale = createColorScale(filteredData);
   const pointRadius = width < 640 ? 3 : 3.8;
   const visiblePadding = 24;
   let pendingZoomFrame = null;
@@ -860,6 +1044,7 @@ function drawScatterplot() {
   const zoom = d3
     .zoom()
     .scaleExtent([0.5, 20])
+    .filter((event) => event.type !== "wheel" && !event.ctrlKey && !event.button)
     .extent([
       [0, 0],
       [innerWidth, innerHeight],
@@ -938,9 +1123,10 @@ function drawScatterplot() {
     svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
   };
 
-  updateLegend();
+  updateLegend(filteredData);
   updatePlotNote(
     validData.length,
+    filteredData.length,
     state.data.length,
     xScaleInfo.type,
     yScaleInfo.type,

@@ -38,11 +38,11 @@
                         style="font-size: 14px; font-weight: bold; color: #8fe3c7; display: block; margin-bottom: 5px;">Interaction
                         Mode</label>
                     <div class="toggle-group" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button id="mode-pan" class="action-btn outline active" style="flex: 1;" title="Drag to pan, scroll to zoom">Pan & Scroll</button>
+                        <button id="mode-pan" class="action-btn outline active" style="flex: 1;" title="Drag to pan, double-click to zoom">Pan</button>
                         <button id="mode-box" class="action-btn outline" style="flex: 1;" title="Drag a selection to zoom">Box Zoom</button>
                     </div>
                     <p class="control-copy" style="font-size: 12px; opacity: 0.8; line-height: 1.4;">
-                        <strong>Pan & Scroll:</strong> Drag to pan. Scroll or double-click to zoom.<br>
+                        <strong>Pan:</strong> Drag to pan. Double-click to zoom. Page scrolling will not move the plot.<br>
                         <strong>Box Zoom:</strong> Drag a rectangle to zoom into that area.
                     </p>
                 </div>
@@ -56,6 +56,7 @@
                         <option value="disc_year">Discovery Year</option>
                         <option value="sy_snum">Number of Stars</option>
                         <option value="sy_pnum">System Planet Count</option>
+                        <option value="pl_bmasse">Planet Mass [Earth Mass] (log)</option>
                         <option value="pl_eqt">Equilibrium Temp (K)</option>
                     </select>
                     
@@ -69,6 +70,23 @@
 
             <section class="panel plot-panel">
                 <div id="my_dataviz"></div>
+                <div class="year-filter-control">
+                    <div class="year-filter-header">
+                        <label class="control-label" for="discovery-year-slider">Discovery Year Filter</label>
+                        <strong id="discovery-year-value">2026</strong>
+                    </div>
+                    <div class="year-filter-main">
+                        <button id="discovery-year-play" class="action-btn year-play-btn" type="button">Play</button>
+                        <div class="year-slider-wrap">
+                            <input id="discovery-year-slider" type="range" min="1992" max="2026" step="1" value="2026">
+                            <div class="year-filter-range">
+                                <span>1992</span>
+                                <span id="discovery-year-range-label">bis 2026</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="control-copy">Zeigt nur Exoplaneten mit Entdeckungsjahr von 1992 bis zum ausgewaehlten Jahr.</p>
+                </div>
                 <div id="plot-note" class="plot-note">Loading NASA export data and glossary...</div>
             </section>
         </div>
