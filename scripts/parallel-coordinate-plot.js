@@ -27,6 +27,23 @@ const colorFieldOptions = [
 ];
 
 const categoricalColorFields = new Set(["sy_snum", "sy_pnum"]);
+const integerCountFields = new Set(["sy_snum", "sy_pnum"]);
+
+function isIntegerCountField(field) {
+    return integerCountFields.has(field);
+}
+
+function getIntegerTickValues(domain) {
+    const min = Math.ceil(domain[0]);
+    const max = Math.floor(domain[1]);
+    if (max < min) return [];
+
+    return d3.range(min, max + 1);
+}
+
+function formatBrushValue(dim, value) {
+    return isIntegerCountField(dim) ? Math.round(value) : +value.toFixed(3);
+}
 
 function toggleMassReference(checked) {
     const badgeEarth = document.getElementById('badge-earth');
@@ -355,6 +372,7 @@ function draw(dimensions)
         const ratio = max / min;
         const canUseLog = min > 0 && max > 0;
         const shouldUseLog =
+            !isIntegerCountField(dim) &&
             canUseLog &&
             (scaleMode === "log" || (scaleMode === "auto" && ratio > 50));
 
@@ -379,7 +397,17 @@ function draw(dimensions)
     initBrushes(dimensions);
 
     // create Y-Axis
-    const axis = d3.axisLeft();
+    function createAxis(dim) {
+        const dimAxis = d3.axisLeft(y[dim]);
+
+        if (isIntegerCountField(dim)) {
+            dimAxis
+                .tickValues(getIntegerTickValues(y[dim].domain()))
+                .tickFormat(d3.format("d"));
+        }
+
+        return dimAxis;
+    }
 
     // Drag functionality for movable axes
     let dragging = {};
@@ -424,7 +452,7 @@ function draw(dimensions)
         .each(function(dim) {
 
             d3.select(this)
-                .call(axis.scale(y[dim]));
+                .call(createAxis(dim));
 
         });
 
@@ -491,9 +519,10 @@ function draw(dimensions)
             const domain = y[dim].domain();
             const minDomain = domain[0];
             const maxDomain = domain[1];
+            const step = isIntegerCountField(dim) ? "1" : "any";
             return `
-            <input type="number" class="brush-max" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Max" step="any" title="Maximum filter value" />
-            <input type="number" class="brush-min" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Min" step="any" title="Minimum filter value" />
+            <input type="number" class="brush-max" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Max" step="${step}" title="Maximum filter value" />
+            <input type="number" class="brush-min" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Min" step="${step}" title="Minimum filter value" />
             <button class="reset-dim-brush" data-dim="${dim}" disabled title="Reset this filter">Reset</button>
         `});
 
@@ -545,17 +574,22 @@ function draw(dimensions)
             const scale = y[dim];
             const maxDomain = scale.domain()[1];
             const minDomain = scale.domain()[0];
+
+            if (isIntegerCountField(dim)) {
+                if (!isNaN(maxVal)) maxVal = Math.round(maxVal);
+                if (!isNaN(minVal)) minVal = Math.round(minVal);
+            }
             
             // Clamp values to the scale's domain to prevent brushes from going out of view
             if (!isNaN(maxVal)) {
                 if (maxVal > maxDomain) maxVal = maxDomain;
                 if (maxVal < minDomain) maxVal = minDomain;
-                maxInput.value = maxVal;
+                maxInput.value = formatBrushValue(dim, maxVal);
             }
             if (!isNaN(minVal)) {
                 if (minVal > maxDomain) minVal = maxDomain;
                 if (minVal < minDomain) minVal = minDomain;
-                minInput.value = minVal;
+                minInput.value = formatBrushValue(dim, minVal);
             }
 
             const effectiveMax = isNaN(maxVal) ? maxDomain : maxVal;
@@ -606,14 +640,25 @@ function draw(dimensions)
 
         if (min > max) [min, max] = [max, min];
 
+        if (isIntegerCountField(dim)) {
+            const midpoint = (min + max) / 2;
+            min = Math.ceil(min);
+            max = Math.floor(max);
+
+            if (min > max) {
+                min = Math.round(midpoint);
+                max = min;
+            }
+        }
+
         brushes[dim] = [min, max];
         
         // Only update input values if the user is not actively typing in them
         if (maxInput && document.activeElement !== maxInput) {
-            maxInput.value = +max.toFixed(3);
+            maxInput.value = formatBrushValue(dim, max);
         }
         if (minInput && document.activeElement !== minInput) {
-            minInput.value = +min.toFixed(3);
+            minInput.value = formatBrushValue(dim, min);
         }
         if (resetBtn) resetBtn.disabled = false;
 
