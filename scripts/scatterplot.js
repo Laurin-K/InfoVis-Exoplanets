@@ -1044,7 +1044,17 @@ function drawScatterplot() {
   const zoom = d3
     .zoom()
     .scaleExtent([0.5, 20])
-    .filter((event) => event.type !== "wheel" && !event.ctrlKey && !event.button)
+    .filter((event) => {
+      if (state.interactionMode !== "pan" || event.ctrlKey) {
+        return false;
+      }
+
+      if (event.type === "wheel") {
+        return true;
+      }
+
+      return !event.button;
+    })
     .extent([
       [0, 0],
       [innerWidth, innerHeight],
