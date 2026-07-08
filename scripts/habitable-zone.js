@@ -3,6 +3,7 @@ const state = {
   planets: [],
   systems: [],
   selectedSystem: null,
+  selectedPlanetName: null,
   simTemp: 5000,
   width: 0,
   height: 0,
@@ -15,8 +16,11 @@ const tempSlider = d3.select("#temp-slider");
 const tempDisplay = d3.select("#temp-display");
 const tempRangeDisplay = d3.select("#temp-range-display");
 const resetBtn = d3.select("#reset-btn");
+const detailCard = d3.select("#planet-detail-card");
+const detailName = d3.select("#detail-name");
+const detailContent = d3.select("#detail-content");
+const detailCloseBtn = d3.select("#detail-close");
 const MIN_ORBIT_GAP = 16;
-const MIN_ORBIT_SPACING = 14;
 const MIN_SIM_TEMP = 500;
 const MAX_SIM_TEMP = 40000;
 const TEMP_SLIDER_STEP = 25;
@@ -43,7 +47,8 @@ const starLayer = g.append("g").attr("class", "star-layer");
 const planetLayer = g.append("g").attr("class", "planet-layer");
 
 // Scales
-let scaleAu = d3.scaleLinear().range([0, Math.min(cx, cy) * 0.9]);
+const maxOrbitRadiusPx = Math.min(cx, cy) * 0.9;
+let scaleAu = d3.scaleLinear().range([0, maxOrbitRadiusPx]);
 
 // Load Data
 d3.csv("../data/nasa_export_small.csv", (d) => {
@@ -54,6 +59,10 @@ d3.csv("../data/nasa_export_small.csv", (d) => {
 
   if (d.hostname && st_teff && st_rad && pl_orbsmax) {
     const pl_orbper = +d.pl_orbper;
+    const pl_rade = +d.pl_rade;
+    const pl_bmasse = +d.pl_bmasse;
+    const pl_insol = +d.pl_insol;
+    const pl_eqt = +d.pl_eqt;
 
     return {
       name: d.pl_name,
@@ -61,8 +70,10 @@ d3.csv("../data/nasa_export_small.csv", (d) => {
       teff: st_teff,
       rad: st_rad,
       orbsmax: pl_orbsmax,
-      bmasse: +d.pl_bmasse || 1, // default visual mass
-      rade: +d.pl_rade || 1, // default visual radius
+      bmasse: Number.isFinite(pl_bmasse) && pl_bmasse > 0 ? pl_bmasse : null,
+      rade: Number.isFinite(pl_rade) && pl_rade > 0 ? pl_rade : null,
+      insol: Number.isFinite(pl_insol) && pl_insol > 0 ? pl_insol : null,
+      eqt: Number.isFinite(pl_eqt) && pl_eqt > 0 ? pl_eqt : null,
       orbper: Number.isFinite(pl_orbper) && pl_orbper > 0 ? pl_orbper : null,
       systemPlanetCount: +d.sy_pnum || null,
     };
@@ -111,6 +122,8 @@ resetBtn.on("click", () => {
   }
 });
 
+detailCloseBtn.on("click", hidePlanetDetail);
+
 function buildSystems(planets) {
   return Array.from(d3.group(planets, (d) => d.host), ([host, systemPlanets]) => {
     systemPlanets.sort((a, b) => a.orbsmax - b.orbsmax);
@@ -134,6 +147,8 @@ function onSystemSelect(hostName) {
   if (!hostName) return;
   state.selectedSystem = state.systems.find((d) => d.host === hostName);
   if (!state.selectedSystem) return;
+  state.selectedPlanetName = null;
+  hidePlanetDetail();
 
   // Update Info UI
   const planets = state.selectedSystem.planets;
@@ -222,6 +237,7 @@ function updateVisualization() {
   // 1. Draw Star
   const starColor = getStarColor(state.simTemp);
   const starVisualRadius = getStarVisualRadius(system);
+  updateScaleRange(starVisualRadius);
 
   const star = starLayer.selectAll("circle.star").data([state.simTemp]);
   star
@@ -262,7 +278,7 @@ function updateVisualization() {
   hzRing.exit().remove();
 
   // 3. Draw all orbits in the selected system
-  const planetData = getPlanetDisplayData(planets, innerHz, outerHz, starVisualRadius);
+  const planetData = getPlanetDisplayData(planets, innerHz, outerHz);
   const orbit = orbitLayer.selectAll("circle.orbit").data(planetData, (d) => d.name);
 
   orbit
@@ -299,6 +315,19 @@ function updateVisualization() {
   const planetMerge = planetEnter.merge(planet);
 
   planetMerge
+    .attr("tabindex", 0)
+    .attr("role", "button")
+    .attr("aria-label", (d) => `Show details for ${d.name}`)
+    .classed("selected", (d) => d.name === state.selectedPlanetName)
+    .on("click", (event, d) => showPlanetDetail(d, innerHz, outerHz))
+    .on("keydown", (event, d) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showPlanetDetail(d, innerHz, outerHz);
+      }
+    });
+
+  planetMerge
     .transition()
     .duration(500)
     .attr("transform", (d) => {
@@ -312,7 +341,8 @@ function updateVisualization() {
     .transition()
     .duration(500)
     .attr("r", (d) => getPlanetVisualRadius(d))
-    .style("fill", (d) => d.status.color);
+    .style("fill", (d) => d.status.color)
+    .style("stroke-width", (d) => d.name === state.selectedPlanetName ? 3 : 1);
 
   planetMerge
     .select("text")
@@ -328,24 +358,16 @@ function updateVisualization() {
   planet.exit().transition().duration(250).style("opacity", 0).remove();
 
   updateStatusCard(planetData, innerHz, outerHz);
+  refreshSelectedPlanetDetail(planetData, innerHz, outerHz);
 }
 
-function getPlanetDisplayData(planets, innerHz, outerHz, starVisualRadius) {
-  let previousOrbitR = 0;
-
+function getPlanetDisplayData(planets, innerHz, outerHz) {
   return planets.map((planet, index) => {
-    const planetVisualRadius = getPlanetVisualRadius(planet);
-    const minOrbitR = starVisualRadius + planetVisualRadius + MIN_ORBIT_GAP;
-    const scaledOrbitR = scaleAu(planet.orbsmax);
-    const visualOrbitR = Math.max(scaledOrbitR, minOrbitR, previousOrbitR + MIN_ORBIT_SPACING);
-
-    previousOrbitR = visualOrbitR;
-
     return {
       ...planet,
       angle: (index / planets.length) * Math.PI * 2 - Math.PI / 2,
       status: getPlanetStatus(planet, innerHz, outerHz),
-      visualOrbitR,
+      visualOrbitR: scaleAu(planet.orbsmax),
     };
   });
 }
@@ -354,8 +376,14 @@ function getStarVisualRadius(system) {
   return Math.max(10, Math.min(80, system.rad * 20));
 }
 
+function updateScaleRange(starVisualRadius) {
+  const orbitStartPx = Math.min(starVisualRadius + MIN_ORBIT_GAP, maxOrbitRadiusPx * 0.45);
+  scaleAu.range([orbitStartPx, maxOrbitRadiusPx]);
+}
+
 function getPlanetVisualRadius(planet) {
-  return Math.max(4, Math.min(15, Math.pow(planet.bmasse, 1 / 3) * 2));
+  const mass = planet.bmasse || 1;
+  return Math.max(4, Math.min(15, Math.pow(mass, 1 / 3) * 2));
 }
 
 function formatOrbitalPeriod(periodDays) {
@@ -408,6 +436,88 @@ function updateStatusCard(planets, innerHz, outerHz) {
     : "No shown planet currently lies inside the habitable zone.";
 
   d3.select("#status-desc").text(`${summary} ${hzRange} ${names}`);
+}
+
+function showPlanetDetail(planet, innerHz, outerHz) {
+  state.selectedPlanetName = planet.name;
+  detailCard.attr("hidden", null);
+  renderPlanetDetail(planet, innerHz, outerHz);
+
+  planetLayer
+    .selectAll("g.planet")
+    .classed("selected", (d) => d.name === state.selectedPlanetName)
+    .select("circle")
+    .style("stroke-width", (d) => d.name === state.selectedPlanetName ? 3 : 1);
+}
+
+function hidePlanetDetail() {
+  state.selectedPlanetName = null;
+  detailCard.attr("hidden", true);
+  detailContent.html("");
+  planetLayer.selectAll("g.planet").classed("selected", false).select("circle").style("stroke-width", 1);
+}
+
+function refreshSelectedPlanetDetail(planets, innerHz, outerHz) {
+  if (!state.selectedPlanetName) return;
+
+  const selectedPlanet = planets.find((planet) => planet.name === state.selectedPlanetName);
+  if (!selectedPlanet) {
+    hidePlanetDetail();
+    return;
+  }
+
+  renderPlanetDetail(selectedPlanet, innerHz, outerHz);
+}
+
+function renderPlanetDetail(planet, innerHz, outerHz) {
+  detailName.text(planet.name || "Unknown planet");
+
+  const rows = [
+    ["Host star", planet.host],
+    ["Status", planet.status.label],
+    ["Orbit", formatAu(planet.orbsmax)],
+    ["Orbital period", formatPeriodValue(planet.orbper)],
+    ["Planet radius", formatNumber(planet.rade, " Earth radii")],
+    ["Planet mass", formatNumber(planet.bmasse, " Earth masses")],
+    ["Insolation", formatNumber(planet.insol, " Earth flux")],
+    ["Equilibrium temp.", formatNumber(planet.eqt, " K")],
+    ["Star temp.", formatNumber(planet.teff, " K", 0)],
+    ["Star radius", formatNumber(planet.rad, " R_sun")],
+    ["Current HZ", `${innerHz.toFixed(3)} - ${outerHz.toFixed(3)} AU`],
+  ];
+
+  detailContent.html(
+    rows
+      .map(([label, value]) => `
+        <div class="detail-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value || "Unknown")}</strong>
+        </div>
+      `)
+      .join("")
+  );
+}
+
+function formatAu(value) {
+  return Number.isFinite(value) ? `${value.toFixed(value < 1 ? 4 : 3)} AU` : "Unknown";
+}
+
+function formatPeriodValue(periodDays) {
+  return formatOrbitalPeriod(periodDays).replace("Orbit: ", "");
+}
+
+function formatNumber(value, unit, digits = 2) {
+  if (!Number.isFinite(value)) return "Unknown";
+  return `${value.toFixed(digits).replace(/\.?0+$/, "")}${unit}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // Helper: Blackbody color approx

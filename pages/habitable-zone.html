@@ -52,7 +52,20 @@
             </aside>
 
             <main class="viz-panel panel">
-                <div id="hz-dataviz"></div>
+                <div class="viz-content">
+                    <div id="hz-dataviz"></div>
+
+                    <div id="planet-detail-card" class="planet-detail-card" hidden>
+                        <div class="detail-card-header">
+                            <div>
+                                <p class="detail-kicker">Selected Planet</p>
+                                <h3 id="detail-name">Planet</h3>
+                            </div>
+                            <button id="detail-close" type="button" aria-label="Close planet details">Close</button>
+                        </div>
+                        <div id="detail-content" class="detail-content"></div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
