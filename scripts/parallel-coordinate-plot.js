@@ -17,7 +17,7 @@ let activeDimensions = [
 const brushes = {};
 let scaleMode = "auto";
 let colorField = "disc_year";
-let colorPalette = "lch-spectrum";
+let colorPalette = "lch-warm-cool";
 
 const colorFieldOptions = [
     "sy_snum", "sy_pnum", "disc_year",
