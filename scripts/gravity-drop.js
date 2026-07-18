@@ -18,7 +18,7 @@ const probeExo = document.getElementById("probe-exo");
 const timerEarth = document.getElementById("timer-earth");
 const timerExo = document.getElementById("timer-exo");
 
-d3.csv("../data/nasa_export_small_merged.csv", (d) => {
+d3.csv("../data/api_only_export.csv", (d) => {
   // Need mass and radius in Earth units
   const mass = +d.pl_bmasse;
   const rad = +d.pl_rade;
@@ -35,7 +35,19 @@ d3.csv("../data/nasa_export_small_merged.csv", (d) => {
   }
   return null;
 }).then((data) => {
-  state.data = data.filter((d) => d !== null);
+  let planets = data.filter((d) => d !== null);
+
+  const saved = localStorage.getItem('selected_planets');
+  if (saved) {
+      try {
+          const selectedSet = new Set(JSON.parse(saved));
+          if (selectedSet.size > 0) {
+              planets = planets.filter(d => selectedSet.has(d.name));
+          }
+      } catch(e) {}
+  }
+
+  state.data = planets;
   state.data.sort((a, b) => a.name.localeCompare(b.name));
 
   selectEl

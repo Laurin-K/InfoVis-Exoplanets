@@ -1162,7 +1162,7 @@ function loadCsvText(path, fallbackText, label) {
 }
 
 Promise.all([
-  loadCsvText("../data/nasa_export_large_merged.csv", fallbackDataCsv, "NASA export"),
+  loadCsvText("../data/api_only_export.csv", fallbackDataCsv, "NASA export"),
   loadCsvText(
     "../data/column_explanation.csv",
     fallbackGlossaryCsv,
@@ -1170,7 +1170,17 @@ Promise.all([
   ),
 ])
   .then(([dataText, glossaryText]) => {
-    const data = d3.csvParse(dataText, parseDataRow);
+    let data = d3.csvParse(dataText, parseDataRow);
+
+    const saved = localStorage.getItem('selected_planets');
+    if (saved) {
+        try {
+            const selectedSet = new Set(JSON.parse(saved));
+            if (selectedSet.size > 0) {
+                data = data.filter(d => selectedSet.has(d.pl_name));
+            }
+        } catch(e) {}
+    }
 
     state.data = data;
     state.glossaryRows = d3.dsvFormat(";").parse(glossaryText);

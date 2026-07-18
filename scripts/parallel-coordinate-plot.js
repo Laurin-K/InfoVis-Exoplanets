@@ -296,7 +296,7 @@ let fullData = [];
 let columnExplanations = {};
 
 Promise.all([
-    d3.csv("../data/nasa_export_small_merged.csv", d => {
+    d3.csv("../data/api_only_export.csv", d => {
         // Convert all numeric strings into numbers so newly checked dimensions scale correctly
         Object.keys(d).forEach(key => {
             if (d[key] === "" || d[key].trim() === "") {
@@ -309,6 +309,33 @@ Promise.all([
     }),
     fetch("../data/column_explanation.csv").then(response => response.text())
 ]).then(([data, explanationsCsv]) => {
+    // Apply Planet Selection
+    const saved = localStorage.getItem('selected_planets');
+    if (saved) {
+        try {
+            const selectedSet = new Set(JSON.parse(saved));
+            if (selectedSet.size > 0) {
+                data = data.filter(d => selectedSet.has(d.pl_name));
+            }
+        } catch(e) {}
+    }
+
+    const MAX_LINES = 250;
+    const warningBanner = document.getElementById("sampling-warning");
+    if (data.length > MAX_LINES) {
+        if (warningBanner) {
+            warningBanner.style.display = "block";
+            warningBanner.innerHTML = `⚠️ Showing a random sample of ${MAX_LINES} planets (out of ${data.length} selected) to maintain performance.`;
+        }
+        // Shuffle and slice
+        d3.shuffle(data);
+        data = data.slice(0, MAX_LINES);
+    } else {
+        if (warningBanner) {
+            warningBanner.style.display = "none";
+        }
+    }
+
     fullData = data;
     parseColumnExplanations(explanationsCsv);
     createTableFromCSV(explanationsCsv);

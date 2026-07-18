@@ -115,7 +115,7 @@ function loadData() {
         }));
     }
 
-    return fetch("../data/nasa_export_large_merged.csv")
+    return fetch("../data/api_only_export.csv")
         .then(response => {
             if (!response.ok) {
                 throw new Error("Could not load CSV file.");
@@ -127,6 +127,16 @@ function loadData() {
 }
 
 function preparePlanets(rows) {
+    const saved = localStorage.getItem('selected_planets');
+    if (saved) {
+        try {
+            const selectedSet = new Set(JSON.parse(saved));
+            if (selectedSet.size > 0) {
+                rows = rows.filter(r => selectedSet.has(r.pl_name));
+            }
+        } catch(e) {}
+    }
+
     return rows
         .map(row => {
             const planet = {

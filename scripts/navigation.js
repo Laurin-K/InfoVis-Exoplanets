@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             <div class="nav-links-container">
                 <a href="${rootPath}index.html" class="nav-link" data-path="index.html">Home</a>
+                <a href="${pagesPath}planet-selector.html" class="nav-link" data-path="planet-selector.html" style="color: #ffca28;">Planet Selector</a>
                 <a href="${pagesPath}parallel-coordinate-plot.html" class="nav-link" data-path="parallel-coordinate-plot.html">Parallel Coordinates</a>
                 
                 <div class="nav-dropdown">

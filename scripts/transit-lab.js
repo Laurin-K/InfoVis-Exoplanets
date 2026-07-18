@@ -79,7 +79,7 @@ const indicatorLine = svg
 const indicatorDot = svg.append("circle").attr("r", 5).style("fill", "white").attr("clip-path", "url(#clip)");
 
 // Load Data
-d3.csv("../data/nasa_export_small_merged.csv", (d) => {
+d3.csv("../data/api_only_export.csv", (d) => {
   // Need planet radius and star radius
   const prad = +d.pl_rade;
   const srad = +d.st_rad;
@@ -93,7 +93,19 @@ d3.csv("../data/nasa_export_small_merged.csv", (d) => {
   }
   return null;
 }).then((data) => {
-  state.data = data.filter((d) => d !== null);
+  let planets = data.filter((d) => d !== null);
+
+  const saved = localStorage.getItem('selected_planets');
+  if (saved) {
+      try {
+          const selectedSet = new Set(JSON.parse(saved));
+          if (selectedSet.size > 0) {
+              planets = planets.filter(d => selectedSet.has(d.name));
+          }
+      } catch(e) {}
+  }
+
+  state.data = planets;
   state.data.sort((a, b) => a.name.localeCompare(b.name));
 
   selectEl
