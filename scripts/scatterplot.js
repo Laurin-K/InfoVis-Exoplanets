@@ -1162,7 +1162,7 @@ function loadCsvText(path, fallbackText, label) {
 }
 
 Promise.all([
-  loadCsvText("../data/nasa_export_large.csv", fallbackDataCsv, "NASA export"),
+  loadCsvText("../data/nasa_export_large_merged.csv", fallbackDataCsv, "NASA export"),
   loadCsvText(
     "../data/column_explanation.csv",
     fallbackGlossaryCsv,

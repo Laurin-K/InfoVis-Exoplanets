@@ -296,7 +296,7 @@ let fullData = [];
 let columnExplanations = {};
 
 Promise.all([
-    d3.csv("../data/nasa_export_small.csv", d => {
+    d3.csv("../data/nasa_export_small_merged.csv", d => {
         // Convert all numeric strings into numbers so newly checked dimensions scale correctly
         Object.keys(d).forEach(key => {
             if (d[key] === "" || d[key].trim() === "") {
