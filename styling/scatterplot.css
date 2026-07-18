@@ -176,6 +176,83 @@ body::before {
     line-height: 1.5;
 }
 
+.year-filter-control {
+    margin-top: 16px;
+    padding: 16px;
+    border-top: 1px solid rgba(154, 178, 217, 0.14);
+    border-radius: 18px;
+    background: rgba(4, 8, 16, 0.42);
+}
+
+.year-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.year-filter-header .control-label {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.year-filter-header strong {
+    color: var(--accent);
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 1.05rem;
+}
+
+#discovery-year-slider {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.year-filter-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+}
+
+.year-slider-wrap {
+    min-width: 0;
+}
+
+.action-btn {
+    border: 1px solid rgba(154, 178, 217, 0.28);
+    border-radius: 12px;
+    background: rgba(4, 8, 16, 0.9);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(113, 234, 223, 0.45);
+}
+
+.year-play-btn {
+    min-width: 86px;
+    padding: 10px 14px;
+}
+
+.year-filter-range {
+    display: flex;
+    justify-content: space-between;
+    margin: 6px 0 10px;
+    color: var(--muted);
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 0.8rem;
+}
+
 .legend {
     margin-top: 18px;
     padding-top: 18px;
@@ -218,6 +295,28 @@ body::before {
     height: auto;
 }
 
+#my_dataviz {
+    min-height: 380px;
+}
+
+.scatterplot-stage {
+    position: relative;
+    width: 100%;
+}
+
+#my_dataviz .scatterplot-stage svg,
+.scatterplot-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.scatterplot-canvas {
+    pointer-events: none;
+}
+
 .axis path,
 .axis line {
     stroke: rgba(165, 184, 217, 0.35);
@@ -248,19 +347,46 @@ body::before {
     letter-spacing: 0.08em;
 }
 
-.point {
-    transition: opacity 0.15s ease, r 0.15s ease, stroke-width 0.15s ease;
-    cursor: pointer;
-}
-
 .action-btn.active {
     background: #8fe3c7;
     color: #050a14;
     border-color: #8fe3c7;
 }
 
-.point:hover {
-    opacity: 1;
+.scatterplot-hit-layer {
+    fill: transparent;
+    pointer-events: all;
+    cursor: crosshair;
+}
+
+.scatter-minimap {
+    pointer-events: none;
+}
+
+.scatter-minimap-bg {
+    fill: rgba(4, 8, 16, 0.82);
+    stroke: rgba(113, 234, 223, 0.42);
+    stroke-width: 1;
+    filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.35));
+}
+
+.scatter-minimap-label {
+    fill: rgba(237, 243, 255, 0.86);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.scatter-minimap-point {
+    opacity: 0.45;
+    stroke: none;
+}
+
+.scatter-minimap-viewport {
+    fill: rgba(113, 234, 223, 0.16);
+    stroke: #71eadf;
+    stroke-width: 1.6;
 }
 
 .plot-note {
@@ -399,5 +525,13 @@ body::before {
 
     .header-metric strong {
         font-size: 1.7rem;
+    }
+
+    .year-filter-main {
+        grid-template-columns: 1fr;
+    }
+
+    .year-play-btn {
+        width: 100%;
     }
 }

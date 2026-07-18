@@ -16,8 +16,8 @@ let activeDimensions = [
 ];
 const brushes = {};
 let scaleMode = "auto";
-let colorField = "sy_snum";
-let colorPalette = "lch-spectrum";
+let colorField = "disc_year";
+let colorPalette = "lch-warm-cool";
 
 const colorFieldOptions = [
     "sy_snum", "sy_pnum", "disc_year",
@@ -27,6 +27,23 @@ const colorFieldOptions = [
 ];
 
 const categoricalColorFields = new Set(["sy_snum", "sy_pnum"]);
+const integerCountFields = new Set(["sy_snum", "sy_pnum"]);
+
+function isIntegerCountField(field) {
+    return integerCountFields.has(field);
+}
+
+function getIntegerTickValues(domain) {
+    const min = Math.ceil(domain[0]);
+    const max = Math.floor(domain[1]);
+    if (max < min) return [];
+
+    return d3.range(min, max + 1);
+}
+
+function formatBrushValue(dim, value) {
+    return isIntegerCountField(dim) ? Math.round(value) : +value.toFixed(3);
+}
 
 function toggleMassReference(checked) {
     const badgeEarth = document.getElementById('badge-earth');
@@ -227,9 +244,31 @@ function buildColorScale(data) {
 }
 
 function formatLegendValue(value) {
+    if (colorField === "disc_year") return d3.format("d")(Math.round(value));
     if (Math.abs(value) >= 1000) return d3.format(".2s")(value);
     if (Math.abs(value) >= 10) return d3.format(".0f")(value);
     return d3.format(".2~f")(value);
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => {
+        switch (char) {
+            case "&": return "&amp;";
+            case "<": return "&lt;";
+            case ">": return "&gt;";
+            case '"': return "&quot;";
+            case "'": return "&#39;";
+            default: return char;
+        }
+    });
+}
+
+function formatDimensionValue(dim, value) {
+    if (value === undefined || value === null || value === "") return "n/a";
+    if (typeof value !== "number" || Number.isNaN(value)) return String(value);
+    if (dim === "disc_year" || isIntegerCountField(dim)) return d3.format("d")(Math.round(value));
+    if (Math.abs(value) >= 1000 || Math.abs(value) < 0.01) return d3.format(".4~g")(value);
+    return d3.format(".3~f")(value);
 }
 
 function updateColorLegend(colorConfig) {
@@ -354,6 +393,7 @@ function draw(dimensions)
         const ratio = max / min;
         const canUseLog = min > 0 && max > 0;
         const shouldUseLog =
+            !isIntegerCountField(dim) &&
             canUseLog &&
             (scaleMode === "log" || (scaleMode === "auto" && ratio > 50));
 
@@ -378,7 +418,17 @@ function draw(dimensions)
     initBrushes(dimensions);
 
     // create Y-Axis
-    const axis = d3.axisLeft();
+    function createAxis(dim) {
+        const dimAxis = d3.axisLeft(y[dim]);
+
+        if (isIntegerCountField(dim)) {
+            dimAxis
+                .tickValues(getIntegerTickValues(y[dim].domain()))
+                .tickFormat(d3.format("d"));
+        }
+
+        return dimAxis;
+    }
 
     // Drag functionality for movable axes
     let dragging = {};
@@ -423,7 +473,7 @@ function draw(dimensions)
         .each(function(dim) {
 
             d3.select(this)
-                .call(axis.scale(y[dim]));
+                .call(createAxis(dim));
 
         });
 
@@ -490,9 +540,10 @@ function draw(dimensions)
             const domain = y[dim].domain();
             const minDomain = domain[0];
             const maxDomain = domain[1];
+            const step = isIntegerCountField(dim) ? "1" : "any";
             return `
-            <input type="number" class="brush-max" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Max" step="any" title="Maximum filter value" />
-            <input type="number" class="brush-min" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Min" step="any" title="Minimum filter value" />
+            <input type="number" class="brush-max" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Max" step="${step}" title="Maximum filter value" />
+            <input type="number" class="brush-min" data-dim="${dim}" min="${minDomain}" max="${maxDomain}" placeholder="Min" step="${step}" title="Minimum filter value" />
             <button class="reset-dim-brush" data-dim="${dim}" disabled title="Reset this filter">Reset</button>
         `});
 
@@ -544,17 +595,22 @@ function draw(dimensions)
             const scale = y[dim];
             const maxDomain = scale.domain()[1];
             const minDomain = scale.domain()[0];
+
+            if (isIntegerCountField(dim)) {
+                if (!isNaN(maxVal)) maxVal = Math.round(maxVal);
+                if (!isNaN(minVal)) minVal = Math.round(minVal);
+            }
             
             // Clamp values to the scale's domain to prevent brushes from going out of view
             if (!isNaN(maxVal)) {
                 if (maxVal > maxDomain) maxVal = maxDomain;
                 if (maxVal < minDomain) maxVal = minDomain;
-                maxInput.value = maxVal;
+                maxInput.value = formatBrushValue(dim, maxVal);
             }
             if (!isNaN(minVal)) {
                 if (minVal > maxDomain) minVal = maxDomain;
                 if (minVal < minDomain) minVal = minDomain;
-                minInput.value = minVal;
+                minInput.value = formatBrushValue(dim, minVal);
             }
 
             const effectiveMax = isNaN(maxVal) ? maxDomain : maxVal;
@@ -605,14 +661,25 @@ function draw(dimensions)
 
         if (min > max) [min, max] = [max, min];
 
+        if (isIntegerCountField(dim)) {
+            const midpoint = (min + max) / 2;
+            min = Math.ceil(min);
+            max = Math.floor(max);
+
+            if (min > max) {
+                min = Math.round(midpoint);
+                max = min;
+            }
+        }
+
         brushes[dim] = [min, max];
         
         // Only update input values if the user is not actively typing in them
         if (maxInput && document.activeElement !== maxInput) {
-            maxInput.value = +max.toFixed(3);
+            maxInput.value = formatBrushValue(dim, max);
         }
         if (minInput && document.activeElement !== minInput) {
-            minInput.value = +min.toFixed(3);
+            minInput.value = formatBrushValue(dim, min);
         }
         if (resetBtn) resetBtn.disabled = false;
 
@@ -682,6 +749,14 @@ function draw(dimensions)
             .filter(Boolean);
     }
 
+    const projectedForegroundPoints = new WeakMap();
+    function getForegroundPoints(d) {
+        if (!projectedForegroundPoints.has(d)) {
+            projectedForegroundPoints.set(d, foregroundPoints(d));
+        }
+        return projectedForegroundPoints.get(d);
+    }
+
     function distanceToLine(points, px, py) {
         if (points.length === 1) {
             return Math.hypot(px - points[0][0], py - points[0][1]);
@@ -724,7 +799,7 @@ function draw(dimensions)
 
         data.forEach(d => {
             if (!passesActiveBrushes(d)) return;
-            const points = foregroundPoints(d);
+            const points = getForegroundPoints(d);
             if (points.length === 0) return;
 
             const distance = distanceToLine(points, px, py);
@@ -782,14 +857,184 @@ function draw(dimensions)
         .style("fill", "none")
         .style("stroke", d => colorConfig.color(d));
 
+    const hoverLayer = svg.append("g")
+        .attr("class", "hover-highlight-layer")
+        .style("pointer-events", "none")
+        .style("display", "none");
+
+    const hoverHaloPath = hoverLayer.append("path")
+        .attr("class", "hover-halo-line")
+        .style("fill", "none")
+        .style("stroke", "rgba(255, 255, 255, 0.9)")
+        .style("stroke-linecap", "round")
+        .style("stroke-linejoin", "round")
+        .style("stroke-width", "7px")
+        .style("opacity", 0.78);
+
+    const hoverDashedPath = hoverLayer.append("path")
+        .attr("class", "line-dashed")
+        .style("fill", "none")
+        .style("stroke-dasharray", "4 4")
+        .style("stroke-linecap", "round")
+        .style("stroke-linejoin", "round")
+        .style("stroke-width", "5px")
+        .style("opacity", 0.82);
+
+    const hoverSolidPath = hoverLayer.append("path")
+        .attr("class", "line-solid")
+        .style("fill", "none")
+        .style("stroke-linecap", "round")
+        .style("stroke-linejoin", "round")
+        .style("stroke-width", "5px")
+        .style("opacity", 1);
+
+    hoverRenderer = {
+        focus(d) {
+            const stroke = colorConfig.color(d);
+            const dashedPath = backgroundPath(d);
+            const solidPath = foregroundPath(d);
+            hoverLayer.style("display", null);
+            hoverHaloPath
+                .attr("d", solidPath);
+            hoverDashedPath
+                .attr("d", dashedPath)
+                .style("stroke", stroke);
+            hoverSolidPath
+                .attr("d", solidPath)
+                .style("stroke", stroke);
+        },
+        clear() {
+            hoverLayer.style("display", "none");
+        }
+    };
+
+    const selectedValueLayer = svg.append("g")
+        .attr("class", "selected-value-layer")
+        .style("pointer-events", "none");
+
+    selectedValueRenderer = {
+        render(d) {
+            const valueData = dimensions
+                .map(dim => ({
+                    dim,
+                    label: formatDimensionValue(dim, d[dim]),
+                    value: d[dim]
+                }))
+                .filter(item => item.value !== undefined && item.value !== null && item.value !== "");
+
+            const markers = selectedValueLayer
+                .selectAll(".selected-value-marker")
+                .data(valueData, item => item.dim)
+                .join(
+                    enter => {
+                        const marker = enter.append("g")
+                            .attr("class", "selected-value-marker");
+
+                        marker.append("circle")
+                            .attr("r", 4.5);
+
+                        marker.append("rect")
+                            .attr("class", "selected-value-box")
+                            .attr("rx", 5)
+                            .attr("ry", 5);
+
+                        marker.append("text")
+                            .attr("x", 8)
+                            .attr("y", -8);
+
+                        return marker;
+                    },
+                    update => update,
+                    exit => exit.remove()
+                );
+
+            markers
+                .attr("transform", item => `translate(${position(item.dim)},${y[item.dim](item.value)})`);
+
+            markers.select("text")
+                .text(item => item.label)
+                .attr("text-anchor", item => position(item.dim) > width - 70 ? "end" : "start")
+                .attr("x", item => position(item.dim) > width - 70 ? -8 : 8);
+
+            markers.each(function() {
+                const marker = d3.select(this);
+                const textNode = marker.select("text").node();
+                if (!textNode) return;
+
+                const bbox = textNode.getBBox();
+                marker.select(".selected-value-box")
+                    .attr("x", bbox.x - 5)
+                    .attr("y", bbox.y - 3)
+                    .attr("width", bbox.width + 10)
+                    .attr("height", bbox.height + 6);
+            });
+
+            const selectedPoints = foregroundPoints(d);
+            const firstSelectedPoint = selectedPoints.length ? selectedPoints[0] : [0, 18];
+            const namePoint = [-margin.left + 8, Math.max(20, Math.min(height - 18, firstSelectedPoint[1]))];
+
+            const nameLabel = selectedValueLayer
+                .selectAll(".selected-planet-name")
+                .data([d]);
+
+            const nameEnter = nameLabel.enter()
+                .append("g")
+                .attr("class", "selected-planet-name");
+
+            nameEnter.append("rect")
+                .attr("rx", 7)
+                .attr("ry", 7);
+
+            nameEnter.append("text")
+                .attr("y", 4)
+                .text(planet => planet.pl_name || "Unknown Planet");
+
+            const mergedNameLabel = nameEnter.merge(nameLabel);
+            mergedNameLabel
+                .attr("transform", () => {
+                    return `translate(${namePoint[0]},${namePoint[1]})`;
+                });
+
+            mergedNameLabel.select("text")
+                .text(planet => planet.pl_name || "Unknown Planet");
+
+            mergedNameLabel.each(function() {
+                const label = d3.select(this);
+                const textNode = label.select("text").node();
+                if (!textNode) return;
+
+                const bbox = textNode.getBBox();
+                const labelWidth = bbox.width + 18;
+                const offsetX = 0;
+
+                label.select("text")
+                    .attr("x", offsetX + 9);
+
+                label.select("rect")
+                    .attr("x", offsetX)
+                    .attr("y", bbox.y - 6)
+                    .attr("width", labelWidth)
+                    .attr("height", bbox.height + 12);
+            });
+        },
+        clear() {
+            selectedValueLayer.selectAll("*").remove();
+        }
+    };
+
     // If a planet was already selected, re-apply the visual classes to the new paths
     if (selectedPlanet) {
         const exists = data.some(d => d.pl_name === selectedPlanet.pl_name);
         if (exists) {
             lineGroups.classed("selected", function(d) { return d.pl_name === selectedPlanet.pl_name; })
                       .classed("dimmed", function(d) { return d.pl_name !== selectedPlanet.pl_name; });
+            const currentSelected = data.find(d => d.pl_name === selectedPlanet.pl_name);
+            selectedPlanet = currentSelected;
+            updateInfocard(currentSelected);
+            selectedValueRenderer.render(currentSelected);
         } else {
             clearInfocard();
+            if (selectedValueRenderer) selectedValueRenderer.clear();
             selectedPlanet = null;
         }
     }
@@ -797,15 +1042,37 @@ function draw(dimensions)
     // Apply any existing brushes to the newly created lines
     updateLines();
 
+    let hoverFrame = null;
+    let latestHoverEvent = null;
+
     svg
-        .on("mousemove.hover", updateHoverFromPointer)
-        .on("mouseleave.hover", clearHoverFocus);
+        .on("mousemove.hover", function(event) {
+            latestHoverEvent = event;
+            if (hoverFrame) return;
+
+            hoverFrame = requestAnimationFrame(() => {
+                hoverFrame = null;
+                if (latestHoverEvent) {
+                    updateHoverFromPointer(latestHoverEvent);
+                }
+            });
+        })
+        .on("mouseleave.hover", function() {
+            if (hoverFrame) {
+                cancelAnimationFrame(hoverFrame);
+                hoverFrame = null;
+            }
+            latestHoverEvent = null;
+            clearHoverFocus();
+        });
 }
 
 //Single planet selection
 let selectedPlanet = null;
 let hoveredPlanetName = null;
 let hoverClearTimeout = null;
+let hoverRenderer = null;
+let selectedValueRenderer = null;
 
 function focusDatalineOnHover(d) {
     if (hoverClearTimeout) {
@@ -813,28 +1080,26 @@ function focusDatalineOnHover(d) {
         hoverClearTimeout = null;
     }
 
-    if (hoveredPlanetName === d.pl_name) return;
+    if (hoveredPlanetName === d.pl_name) {
+        if (hoverRenderer) hoverRenderer.focus(d);
+        return;
+    }
     hoveredPlanetName = d.pl_name;
 
-    d3.selectAll(".line-group")
-        .classed("hovered", function(lineData) { return lineData.pl_name === d.pl_name; })
-        .classed("hover-dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; })
-        .classed("dimmed", function(lineData) {
-            return selectedPlanet &&
-                lineData.pl_name !== selectedPlanet.pl_name &&
-                lineData.pl_name !== d.pl_name;
-        });
+    if (hoverRenderer) hoverRenderer.focus(d);
 }
 
 function clearHoverFocus(force = false) {
+    if (!hoveredPlanetName && !selectedPlanet) {
+        if (hoverRenderer) hoverRenderer.clear();
+        return;
+    }
+
     if (hoverClearTimeout) clearTimeout(hoverClearTimeout);
 
     const clear = () => {
         hoveredPlanetName = null;
-
-        d3.selectAll(".line-group")
-            .classed("hovered", false)
-            .classed("hover-dimmed", false);
+        if (hoverRenderer) hoverRenderer.clear();
 
         if (selectedPlanet) {
             d3.selectAll(".line-group")
@@ -858,6 +1123,7 @@ function selectDataline(d) {
         .classed("selected", function(lineData) { return lineData.pl_name === d.pl_name; })
         .classed("dimmed", function(lineData) { return lineData.pl_name !== d.pl_name; });
 
+    if (selectedValueRenderer) selectedValueRenderer.render(d);
     updateInfocard(d);
 }
 
@@ -869,6 +1135,7 @@ function deselectAllDatalines() {
         .classed("selected", false)
         .classed("dimmed", false);
 
+    if (selectedValueRenderer) selectedValueRenderer.clear();
     clearInfocard();
 }
 
@@ -878,6 +1145,41 @@ function updateInfocard(d) {
     const contentDiv = document.getElementById("infocard-content");
 
     if (!card || !contentDiv) return;
+
+    const dataFields = fullData.columns || Object.keys(d);
+    const safeFields = dataFields.filter(key => !key.startsWith("__"));
+
+    let selectedHtml = `
+        <div class="infocard-layout">
+            <aside class="infocard-planet-name">
+                <p class="infocard-kicker">Selected planet</p>
+                <h2>${escapeHtml(d.pl_name || "Unknown Planet")}</h2>
+                <p>${escapeHtml(d.hostname || "Unknown host")}</p>
+            </aside>
+            <div class="infocard-data">
+                <p class="infocard-note">All available data fields for the selected planet.</p>
+                <table>
+    `;
+
+    safeFields.forEach(dim => {
+        const label = columnExplanations[dim] ? columnExplanations[dim].name : dim;
+        selectedHtml += `
+            <tr>
+                <td>${escapeHtml(label)}</td>
+                <td>${escapeHtml(formatDimensionValue(dim, d[dim]))}</td>
+            </tr>
+        `;
+    });
+
+    selectedHtml += `
+                </table>
+            </div>
+        </div>
+    `;
+
+    contentDiv.innerHTML = selectedHtml;
+    card.style.display = "block";
+    return;
 
     let html = `<h2>${d.pl_name || "Unknown Planet"}</h2>`;
     html += `<table>`;

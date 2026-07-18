@@ -26,15 +26,26 @@ const integerDimensions = new Set([
   "disc_year",
 ]);
 
+const logColorFields = new Set(["pl_bmasse"]);
+
+const discoveryYearMin = 1992;
+const discoveryYearMax = 2026;
+const discoveryYearPlaybackDelay = 700;
+
 const state = {
   xField: "pl_orbsmax",
   yField: "pl_bmasse",
   colorField: "disc_year",
+  discoveryYearUpperBound: discoveryYearMax,
   data: [],
   glossaryRows: [],
   glossaryByColumn: new Map(),
   yearDomain: [],
   resizeTimer: null,
+  yearFilterFrame: null,
+  yearPlaybackTimer: null,
+  isYearPlaybackRunning: false,
+  isYearSliderDragging: false,
   interactionMode: "pan",
 };
 
@@ -161,16 +172,37 @@ function createScale(values, range) {
   };
 }
 
-function updateHeaderMetric(validCount, totalCount) {
+function getYearFilteredData() {
+  return state.data.filter(
+    (d) =>
+      isValidNumber(d.disc_year) &&
+      d.disc_year >= discoveryYearMin &&
+      d.disc_year <= state.discoveryYearUpperBound,
+  );
+}
+
+function updateHeaderMetric(validCount, filteredCount, totalCount) {
   d3.select("#chart-summary").html(`
             <strong>${d3.format(",")(validCount)}</strong>
-            <span>of ${d3.format(",")(totalCount)} records plotted</span>
+            <span>of ${d3.format(",")(filteredCount)} filtered records plotted</span>
+            <span>${d3.format(",")(totalCount)} records total</span>
         `);
 }
 
-function updatePlotNote(validCount, totalCount, xScaleType, yScaleType) {
-  const missingCount = totalCount - validCount;
+function updatePlotNote(validCount, filteredCount, totalCount, xScaleType, yScaleType) {
+  const missingCount = filteredCount - validCount;
+  const yearFilteredOutCount = totalCount - filteredCount;
   const notes = [];
+
+  notes.push(
+    `Discovery year filter: ${discoveryYearMin} to ${state.discoveryYearUpperBound}.`,
+  );
+
+  if (yearFilteredOutCount > 0) {
+    notes.push(
+      `${d3.format(",")(yearFilteredOutCount)} rows are outside this year range or have no discovery year.`,
+    );
+  }
 
   if (missingCount > 0) {
     notes.push(
@@ -185,12 +217,16 @@ function updatePlotNote(validCount, totalCount, xScaleType, yScaleType) {
   d3.select("#plot-note").text(notes.join(" "));
 }
 
-function updateLegend() {
+function updateLegend(data = state.data) {
   const legend = d3.select("#dynamic-legend");
   legend.html("");
 
   const field = state.colorField;
-  const values = state.data.map((d) => d[field]).filter(isValidNumber);
+  const values = data
+    .map((d) => d[field])
+    .filter((value) =>
+      logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value),
+    );
   if (!values.length) {
     legend.html("<div class='legend-caption'>No color data</div>");
     return;
@@ -233,6 +269,7 @@ function updateLegend() {
       .text(fieldLabel(field));
   } else {
     const [minVal, maxVal] = d3.extent(values);
+    const useLogColor = logColorFields.has(field) && minVal > 0 && maxVal > 0;
     const bar = legend.append("div").attr("class", "legend-bar");
     const grad = bar
       .append("div")
@@ -243,8 +280,12 @@ function updateLegend() {
     if (minVal === maxVal) {
       grad.style("background", d3.interpolateViridis(0.55));
     } else {
+      const logMin = useLogColor ? Math.log10(minVal) : null;
+      const logMax = useLogColor ? Math.log10(maxVal) : null;
       const stops = d3.range(0, 1.01, 0.2).map((step) => {
-        const value = minVal + (maxVal - minVal) * step;
+        const value = useLogColor
+          ? 10 ** (logMin + (logMax - logMin) * step)
+          : minVal + (maxVal - minVal) * step;
         return `${d3.interpolateViridis(step)} ${Math.round(step * 100)}%`;
       });
       grad.style("background", `linear-gradient(90deg, ${stops.join(", ")})`);
@@ -264,13 +305,17 @@ function updateLegend() {
       .append("div")
       .attr("class", "legend-caption")
       .style("margin-top", "8px")
-      .text(fieldLabel(field));
+      .text(`${fieldLabel(field)}${useLogColor ? " (log scale)" : ""}`);
   }
 }
 
-function createColorScale() {
+function createColorScale(data = state.data) {
   const field = state.colorField;
-  const values = state.data.map((d) => d[field]).filter(isValidNumber);
+  const values = data
+    .map((d) => d[field])
+    .filter((value) =>
+      logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value),
+    );
   if (!values.length) return () => "#8ea0b8";
 
   if (field === "sy_snum" || field === "sy_pnum") {
@@ -279,6 +324,13 @@ function createColorScale() {
   } else {
     const [minVal, maxVal] = d3.extent(values);
     if (minVal === maxVal) return () => d3.interpolateViridis(0.55);
+
+    if (logColorFields.has(field) && minVal > 0 && maxVal > 0) {
+      const scale = d3
+        .scaleSequential(d3.interpolateViridis)
+        .domain([Math.log10(minVal), Math.log10(maxVal)]);
+      return (val) => (isValidNumber(val) && val > 0 ? scale(Math.log10(val)) : "#8ea0b8");
+    }
 
     const scale = d3
       .scaleSequential(d3.interpolateViridis)
@@ -290,6 +342,99 @@ function createColorScale() {
 function syncSelectValues() {
   d3.select("#x-select").property("value", state.xField);
   d3.select("#y-select").property("value", state.yField);
+}
+
+function syncDiscoveryYearControl() {
+  d3.select("#discovery-year-slider").property(
+    "value",
+    state.discoveryYearUpperBound,
+  );
+  d3.select("#discovery-year-value").text(state.discoveryYearUpperBound);
+  d3.select("#discovery-year-range-label").text(
+    `bis ${state.discoveryYearUpperBound}`,
+  );
+
+  d3.select("#discovery-year-play")
+    .classed("active", state.isYearPlaybackRunning)
+    .text(state.isYearPlaybackRunning ? "Pause" : "Play");
+}
+
+function scheduleYearFilterRedraw() {
+  if (state.yearFilterFrame) {
+    window.cancelAnimationFrame(state.yearFilterFrame);
+  }
+
+  state.yearFilterFrame = window.requestAnimationFrame(() => {
+    state.yearFilterFrame = null;
+    drawScatterplot();
+  });
+}
+
+function updateDiscoveryYearUpperBound(year) {
+  state.discoveryYearUpperBound = Math.max(
+    discoveryYearMin,
+    Math.min(discoveryYearMax, Math.round(year)),
+  );
+  syncDiscoveryYearControl();
+}
+
+function setDiscoveryYearUpperBound(year) {
+  updateDiscoveryYearUpperBound(year);
+  scheduleYearFilterRedraw();
+}
+
+function commitDiscoveryYearSliderValue(value) {
+  stopDiscoveryYearPlayback();
+  setDiscoveryYearUpperBound(value);
+}
+
+function stopDiscoveryYearPlayback() {
+  const wasRunning = state.isYearPlaybackRunning || state.yearPlaybackTimer;
+
+  if (state.yearPlaybackTimer) {
+    window.clearInterval(state.yearPlaybackTimer);
+    state.yearPlaybackTimer = null;
+  }
+
+  state.isYearPlaybackRunning = false;
+
+  if (wasRunning) {
+    syncDiscoveryYearControl();
+  }
+}
+
+function startDiscoveryYearPlayback() {
+  stopDiscoveryYearPlayback();
+
+  if (state.discoveryYearUpperBound >= discoveryYearMax) {
+    state.discoveryYearUpperBound = discoveryYearMin;
+  }
+
+  state.isYearPlaybackRunning = true;
+  syncDiscoveryYearControl();
+  scheduleYearFilterRedraw();
+
+  state.yearPlaybackTimer = window.setInterval(() => {
+    if (state.discoveryYearUpperBound >= discoveryYearMax) {
+      stopDiscoveryYearPlayback();
+      return;
+    }
+
+    const nextYear = state.discoveryYearUpperBound + 1;
+    setDiscoveryYearUpperBound(nextYear);
+
+    if (nextYear >= discoveryYearMax) {
+      stopDiscoveryYearPlayback();
+    }
+  }, discoveryYearPlaybackDelay);
+}
+
+function toggleDiscoveryYearPlayback() {
+  if (state.isYearPlaybackRunning) {
+    stopDiscoveryYearPlayback();
+  } else {
+    startDiscoveryYearPlayback();
+  }
 }
 
 function ensureDistinctAxes(changedAxis) {
@@ -386,6 +531,40 @@ function buildControls() {
     state.colorField = this.value;
     drawScatterplot();
   });
+
+  const discoveryYearSlider = d3.select("#discovery-year-slider");
+  discoveryYearSlider
+    .attr("min", discoveryYearMin)
+    .attr("max", discoveryYearMax)
+    .attr("step", 1);
+
+  syncDiscoveryYearControl();
+
+  discoveryYearSlider.on("pointerdown", function () {
+    state.isYearSliderDragging = true;
+    stopDiscoveryYearPlayback();
+  });
+
+  discoveryYearSlider.on("input", function () {
+    const nextYear = +this.value;
+    stopDiscoveryYearPlayback();
+    setDiscoveryYearUpperBound(nextYear);
+  });
+
+  discoveryYearSlider.on("change", function () {
+    const nextYear = +this.value;
+    state.isYearSliderDragging = false;
+    commitDiscoveryYearSliderValue(nextYear);
+  });
+
+  discoveryYearSlider.on("pointerup pointercancel", function () {
+    if (!state.isYearSliderDragging) return;
+    const nextYear = +this.value;
+    state.isYearSliderDragging = false;
+    commitDiscoveryYearSliderValue(nextYear);
+  });
+
+  d3.select("#discovery-year-play").on("click", toggleDiscoveryYearPlayback);
 }
 
 function buildGlossaryTable(rows) {
@@ -476,6 +655,22 @@ function hideTooltip() {
   tooltip.classed("is-visible", false);
 }
 
+function drawRoundedRect(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.lineTo(x + width - r, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + r);
+  context.lineTo(x + width, y + height - r);
+  context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  context.lineTo(x + r, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - r);
+  context.lineTo(x, y + r);
+  context.quadraticCurveTo(x, y, x + r, y);
+  context.closePath();
+}
+
 function drawScatterplot() {
   const container = document.querySelector("#my_dataviz");
   if (!container || !state.data.length) {
@@ -499,36 +694,63 @@ function drawScatterplot() {
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  const validData = state.data.filter(
+  const scaleData = state.data.filter(
+    (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
+  );
+  const filteredData = getYearFilteredData();
+  const validData = filteredData.filter(
     (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
   );
 
-  updateHeaderMetric(validData.length, state.data.length);
+  updateHeaderMetric(validData.length, filteredData.length, state.data.length);
 
-  if (!validData.length) {
+  if (!scaleData.length) {
     d3.select("#plot-note").text(
       "No records have values for both selected axes.",
     );
+    updateLegend(filteredData);
     return;
   }
 
   const xScaleInfo = createScale(
-    validData.map((d) => d[state.xField]),
+    scaleData.map((d) => d[state.xField]),
     [0, innerWidth],
   );
   const yScaleInfo = createScale(
-    validData.map((d) => d[state.yField]),
+    scaleData.map((d) => d[state.yField]),
     [innerHeight, 0],
   );
-  const colorScale = createColorScale();
+  const colorScale = createColorScale(filteredData);
+  const pointRadius = width < 640 ? 3 : 3.8;
+  const visiblePadding = 24;
+  let pendingZoomFrame = null;
+  let latestZoomTransform = d3.zoomIdentity;
+  let currentVisibleData = [];
+
+  const stage = d3
+    .select(container)
+    .append("div")
+    .attr("class", "scatterplot-stage")
+    .style("aspect-ratio", `${width} / ${height}`);
+
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const canvas = stage
+    .append("canvas")
+    .attr("class", "scatterplot-canvas")
+    .attr("width", Math.floor(width * pixelRatio))
+    .attr("height", Math.floor(height * pixelRatio))
+    .style("width", "100%")
+    .style("height", "100%");
+  const context = canvas.node().getContext("2d");
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
   const svg = d3
-    .select(container)
+    .select(stage.node())
     .append("svg")
     .attr("viewBox", `0 0 ${width} ${height}`)
     .attr("preserveAspectRatio", "xMidYMid meet")
     .style("width", "100%")
-    .style("height", "auto");
+    .style("height", "100%");
 
   const defs = svg.append("defs");
   defs
@@ -552,7 +774,7 @@ function drawScatterplot() {
     .attr("width", innerWidth)
     .attr("height", innerHeight)
     .attr("rx", 16)
-    .attr("fill", "rgba(5, 11, 21, 0.55)")
+    .attr("fill", "transparent")
     .attr("stroke", "rgba(154, 178, 217, 0.12)");
 
   root
@@ -609,59 +831,236 @@ function drawScatterplot() {
 
   const chart = root.append("g").attr("clip-path", "url(#scatter-clip)");
 
-  const dots = chart.append("g");
-
-  dots
-    .selectAll("circle")
-    .data(validData)
-    .join("circle")
-    .attr("class", "point")
-    .attr("cx", (d) => xScaleInfo.scale(d[state.xField]))
-    .attr("cy", (d) => yScaleInfo.scale(d[state.yField]))
-    .attr("r", width < 640 ? 3 : 3.8)
-    .attr("fill", (d) =>
+  const plottedData = validData.map((d, index) => ({
+    ...d,
+    __plotId: `${d.pl_name || d.hostname || "planet"}-${index}`,
+    __x: xScaleInfo.scale(d[state.xField]),
+    __y: yScaleInfo.scale(d[state.yField]),
+    __color:
       colorScale && isValidNumber(d[state.colorField])
         ? colorScale(d[state.colorField])
         : "#8ea0b8",
-    )
-    .attr("fill-opacity", 0.86)
-    .attr("stroke", "rgba(5, 10, 20, 0.72)")
-    .attr("stroke-width", 1)
-    .on("mouseenter", function (event, datum) {
-      d3.select(this).attr("stroke-width", 2);
-      showTooltip(event, datum);
+  }));
+
+  function visibleDataForTransform(transform) {
+    const [x0, y0] = transform.invert([-visiblePadding, -visiblePadding]);
+    const [x1, y1] = transform.invert([
+      innerWidth + visiblePadding,
+      innerHeight + visiblePadding,
+    ]);
+    const minX = Math.min(x0, x1);
+    const maxX = Math.max(x0, x1);
+    const minY = Math.min(y0, y1);
+    const maxY = Math.max(y0, y1);
+
+    return plottedData.filter(
+      (d) => d.__x >= minX && d.__x <= maxX && d.__y >= minY && d.__y <= maxY,
+    );
+  }
+
+  function renderVisiblePoints(transform) {
+    const visibleData = visibleDataForTransform(transform);
+    currentVisibleData = visibleData;
+
+    context.clearRect(0, 0, width, height);
+
+    context.save();
+    drawRoundedRect(context, margin.left, margin.top, innerWidth, innerHeight, 16);
+    context.fillStyle = "rgba(5, 11, 21, 0.55)";
+    context.fill();
+    context.clip();
+
+    context.globalAlpha = 0.86;
+    for (const d of visibleData) {
+      const x = margin.left + transform.applyX(d.__x);
+      const y = margin.top + transform.applyY(d.__y);
+
+      context.beginPath();
+      context.arc(x, y, pointRadius, 0, Math.PI * 2);
+      context.fillStyle = d.__color;
+      context.fill();
+    }
+    context.restore();
+  }
+
+  function nearestPointAt(screenX, screenY, transform) {
+    const maxDistance = Math.max(8, pointRadius + 5);
+    const maxDistanceSquared = maxDistance * maxDistance;
+    let nearest = null;
+    let nearestDistance = maxDistanceSquared;
+
+    for (const d of currentVisibleData) {
+      const dx = transform.applyX(d.__x) - screenX;
+      const dy = transform.applyY(d.__y) - screenY;
+      const distance = dx * dx + dy * dy;
+
+      if (distance < nearestDistance) {
+        nearest = d;
+        nearestDistance = distance;
+      }
+    }
+
+    return nearest;
+  }
+
+  chart
+    .append("rect")
+    .attr("class", "scatterplot-hit-layer")
+    .attr("width", innerWidth)
+    .attr("height", innerHeight)
+    .on("mousemove", function (event) {
+      const [x, y] = d3.pointer(event, this);
+      const nearest = nearestPointAt(x, y, latestZoomTransform);
+
+      if (nearest) {
+        showTooltip(event, nearest);
+      } else {
+        hideTooltip();
+      }
     })
-    .on("mousemove", function (event, datum) {
-      showTooltip(event, datum);
-    })
-    .on("mouseleave", function () {
-      d3.select(this).attr("stroke-width", 1);
-      hideTooltip();
+    .on("mouseleave", hideTooltip);
+
+  const minimapWidth = width < 640 ? 118 : 156;
+  const minimapHeight = width < 640 ? 86 : 108;
+  const minimapPadding = 12;
+  const minimapX = Math.max(8, innerWidth - minimapWidth - 14);
+  const minimapY = 14;
+  const minimapXScale = xScaleInfo.scale
+    .copy()
+    .range([minimapPadding, minimapWidth - minimapPadding]);
+  const minimapYScale = yScaleInfo.scale
+    .copy()
+    .range([minimapHeight - minimapPadding, minimapPadding]);
+  const minimapSampleStep = Math.max(1, Math.ceil(plottedData.length / 1200));
+  const minimapData = plottedData.filter(
+    (d, index) => index % minimapSampleStep === 0,
+  );
+
+  defs
+    .append("clipPath")
+    .attr("id", "scatter-minimap-clip")
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", minimapWidth)
+    .attr("height", minimapHeight)
+    .attr("rx", 12);
+
+  const minimap = root
+    .append("g")
+    .attr("class", "scatter-minimap")
+    .attr("transform", `translate(${minimapX},${minimapY})`);
+
+  minimap
+    .append("rect")
+    .attr("class", "scatter-minimap-bg")
+    .attr("width", minimapWidth)
+    .attr("height", minimapHeight)
+    .attr("rx", 12);
+
+  minimap
+    .append("g")
+    .attr("clip-path", "url(#scatter-minimap-clip)")
+    .selectAll("circle")
+    .data(minimapData)
+    .join("circle")
+    .attr("class", "scatter-minimap-point")
+    .attr("cx", (d) => minimapXScale(d[state.xField]))
+    .attr("cy", (d) => minimapYScale(d[state.yField]))
+    .attr("r", width < 640 ? 1 : 1.25)
+    .attr("fill", (d) => d.__color);
+
+  minimap
+    .append("text")
+    .attr("class", "scatter-minimap-label")
+    .attr("x", 10)
+    .attr("y", 15)
+    .text("Zoom overview");
+
+  const minimapViewport = minimap
+    .append("rect")
+    .attr("class", "scatter-minimap-viewport")
+    .attr("rx", 5);
+
+  function updateMinimapViewport(transform) {
+    const [x0, y0] = transform.invert([0, 0]);
+    const [x1, y1] = transform.invert([innerWidth, innerHeight]);
+
+    const viewX0 = Math.max(0, Math.min(innerWidth, Math.min(x0, x1)));
+    const viewX1 = Math.max(0, Math.min(innerWidth, Math.max(x0, x1)));
+    const viewY0 = Math.max(0, Math.min(innerHeight, Math.min(y0, y1)));
+    const viewY1 = Math.max(0, Math.min(innerHeight, Math.max(y0, y1)));
+
+    const miniX0 =
+      minimapPadding +
+      (viewX0 / innerWidth) * (minimapWidth - minimapPadding * 2);
+    const miniX1 =
+      minimapPadding +
+      (viewX1 / innerWidth) * (minimapWidth - minimapPadding * 2);
+    const miniY0 =
+      minimapPadding +
+      (viewY0 / innerHeight) * (minimapHeight - minimapPadding * 2);
+    const miniY1 =
+      minimapPadding +
+      (viewY1 / innerHeight) * (minimapHeight - minimapPadding * 2);
+
+    minimapViewport
+      .attr("x", miniX0)
+      .attr("y", miniY0)
+      .attr("width", Math.max(2, miniX1 - miniX0))
+      .attr("height", Math.max(2, miniY1 - miniY0));
+  }
+
+  updateMinimapViewport(d3.zoomIdentity);
+  renderVisiblePoints(d3.zoomIdentity);
+
+  function renderZoomState(transform) {
+    const newX = transform.rescaleX(xScaleInfo.scale);
+    const newY = transform.rescaleY(yScaleInfo.scale);
+
+    xAxis.call(d3.axisBottom(newX).ticks(6));
+    yAxis.call(d3.axisLeft(newY).ticks(6));
+
+    xAxis.selectAll(".tick line").attr("y2", 8);
+    yAxis.selectAll(".tick line").attr("x2", -8);
+
+    renderVisiblePoints(transform);
+    updateMinimapViewport(transform);
+  }
+
+  function scheduleZoomRender(transform) {
+    latestZoomTransform = transform;
+
+    if (pendingZoomFrame) {
+      return;
+    }
+
+    pendingZoomFrame = window.requestAnimationFrame(() => {
+      pendingZoomFrame = null;
+      renderZoomState(latestZoomTransform);
     });
+  }
 
   const zoom = d3
     .zoom()
     .scaleExtent([0.5, 20])
+    .filter((event) => {
+      if (state.interactionMode !== "pan" || event.ctrlKey) {
+        return false;
+      }
+
+      if (event.type === "wheel") {
+        return true;
+      }
+
+      return !event.button;
+    })
     .extent([
       [0, 0],
       [innerWidth, innerHeight],
     ])
     .on("zoom", (event) => {
-      dots.attr("transform", event.transform);
-
-      const newX = event.transform.rescaleX(xScaleInfo.scale);
-      const newY = event.transform.rescaleY(yScaleInfo.scale);
-
-      xAxis.call(d3.axisBottom(newX).ticks(6));
-      yAxis.call(d3.axisLeft(newY).ticks(6));
-
-      xAxis.selectAll(".tick line").attr("y2", 8);
-      yAxis.selectAll(".tick line").attr("x2", -8);
-
-      dots
-        .selectAll("circle")
-        .attr("r", (width < 640 ? 3 : 3.8) / event.transform.k)
-        .attr("stroke-width", 1 / event.transform.k);
+      scheduleZoomRender(event.transform);
     });
 
   svg.call(zoom);
@@ -734,9 +1133,10 @@ function drawScatterplot() {
     svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
   };
 
-  updateLegend();
+  updateLegend(filteredData);
   updatePlotNote(
     validData.length,
+    filteredData.length,
     state.data.length,
     xScaleInfo.type,
     yScaleInfo.type,

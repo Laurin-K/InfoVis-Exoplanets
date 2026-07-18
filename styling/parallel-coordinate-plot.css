@@ -36,15 +36,7 @@ body {
 
 body::before {
   content: "";
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.12) 1px,
-    transparent 1px
-  );
-  background-size: 34px 34px;
-  opacity: 0.16;
-  pointer-events: none;
+  display: none;
 }
 
 .parallel-page {
@@ -93,8 +85,7 @@ h1 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32);
 }
 
 .compare-layout {
@@ -107,6 +98,8 @@ h1 {
 .chart-panel {
   display: flex;
   flex-direction: column;
+  height: clamp(540px, calc((100vh - 230px) * 1.5), 840px);
+  contain: layout paint;
 }
 
 .control-panel,
@@ -453,16 +446,12 @@ input:checked + .slider::before {
 
 .line-group path {
   stroke-width: 1.7px;
-  transition:
-    opacity 0.08s ease,
-    stroke-width 0.08s ease,
-    filter 0.08s ease;
+  transition: opacity 0.08s ease;
 }
 
 .line-group.hovered path {
   stroke-width: 4.4px;
   opacity: 1 !important;
-  filter: drop-shadow(0 0 5px rgba(242, 198, 109, 0.55));
 }
 
 .line-group.hovered .line-solid {
@@ -471,7 +460,6 @@ input:checked + .slider::before {
 
 .line-group.selected path {
   stroke-width: 4px !important;
-  filter: drop-shadow(0 0 7px rgba(242, 198, 109, 0.58));
 }
 
 .line-group.selected .line-solid {
@@ -486,26 +474,100 @@ input:checked + .slider::before {
 .line-group.hover-dimmed path {
   opacity: 0.05 !important;
   stroke-width: 0.8px;
-  filter: none;
 }
 
 .line-group.hovered path,
 .line-group.selected.hovered path {
   stroke-width: 4.4px !important;
   opacity: 1 !important;
-  filter: drop-shadow(0 0 5px rgba(242, 198, 109, 0.6));
+}
+
+.selected-value-marker circle {
+  fill: #f3b26d;
+  stroke: rgba(4, 8, 16, 0.95);
+  stroke-width: 2px;
+}
+
+.selected-value-box {
+  fill: rgba(4, 8, 16, 0.88);
+  stroke: rgba(243, 178, 109, 0.72);
+  stroke-width: 1px;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
+}
+
+.selected-value-marker text {
+  fill: #fff7e8;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.selected-planet-name rect {
+  fill: rgba(4, 8, 16, 0.92);
+  stroke: rgba(143, 227, 199, 0.82);
+  stroke-width: 1px;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+}
+
+.selected-planet-name text {
+  fill: #edf3ff;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .infocard {
   display: none;
   margin-top: 18px;
   padding: 18px;
+  content-visibility: auto;
+  contain-intrinsic-size: 180px;
 }
 
 .infocard h2 {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--text);
   font-size: 1.35rem;
+}
+
+.infocard-kicker,
+.infocard-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.infocard-note {
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.infocard-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.infocard-planet-name {
+  position: sticky;
+  top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(154, 178, 217, 0.18);
+  border-radius: 18px;
+  background: rgba(4, 8, 16, 0.55);
+}
+
+.infocard-planet-name p:last-child {
+  margin: 10px 0 0;
+  color: var(--accent);
+  line-height: 1.4;
+}
+
+.infocard-data {
+  min-width: 0;
 }
 
 .infocard table {
@@ -530,6 +592,8 @@ input:checked + .slider::before {
 
 .metric-panel {
   margin-top: 18px;
+  content-visibility: auto;
+  contain-intrinsic-size: 520px;
 }
 
 .metric-panel h2 {
@@ -596,6 +660,14 @@ input:checked + .slider::before {
     display: flex;
     justify-content: center;
     width: 100%;
+  }
+
+  .infocard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .infocard-planet-name {
+    position: static;
   }
 }
 
