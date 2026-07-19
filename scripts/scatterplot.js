@@ -32,9 +32,180 @@ const discoveryYearMin = 1992;
 const discoveryYearMax = 2026;
 const discoveryYearPlaybackDelay = 700;
 
+const solarSystemPlanets = [
+  {
+    pl_name: "Mercury",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 87.969,
+    pl_orbsmax: 0.3871,
+    pl_rade: 0.3829,
+    pl_radj: 0.0342,
+    pl_bmasse: 0.0553,
+    pl_bmassj: 0.00017,
+    pl_eqt: 440,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Venus",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 224.701,
+    pl_orbsmax: 0.7233,
+    pl_rade: 0.9499,
+    pl_radj: 0.0847,
+    pl_bmasse: 0.815,
+    pl_bmassj: 0.00256,
+    pl_eqt: 232,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Earth",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 365.256,
+    pl_orbsmax: 1.0000,
+    pl_rade: 1.0000,
+    pl_radj: 0.0892,
+    pl_bmasse: 1.0000,
+    pl_bmassj: 0.00315,
+    pl_eqt: 254,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Mars",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 686.980,
+    pl_orbsmax: 1.5237,
+    pl_rade: 0.5320,
+    pl_radj: 0.0475,
+    pl_bmasse: 0.107,
+    pl_bmassj: 0.00034,
+    pl_eqt: 210,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Jupiter",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 4332.589,
+    pl_orbsmax: 5.2028,
+    pl_rade: 11.209,
+    pl_radj: 1.0000,
+    pl_bmasse: 317.828,
+    pl_bmassj: 1.0000,
+    pl_eqt: 110,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Saturn",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 10759.22,
+    pl_orbsmax: 9.5370,
+    pl_rade: 9.449,
+    pl_radj: 0.843,
+    pl_bmasse: 95.159,
+    pl_bmassj: 0.299,
+    pl_eqt: 81,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Uranus",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 30688.5,
+    pl_orbsmax: 19.191,
+    pl_rade: 4.007,
+    pl_radj: 0.358,
+    pl_bmasse: 14.536,
+    pl_bmassj: 0.046,
+    pl_eqt: 58,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  },
+  {
+    pl_name: "Neptune",
+    hostname: "Sun",
+    disc_year: 0,
+    pl_orbper: 60182.0,
+    pl_orbsmax: 30.069,
+    pl_rade: 3.883,
+    pl_radj: 0.346,
+    pl_bmasse: 17.147,
+    pl_bmassj: 0.054,
+    pl_eqt: 47,
+    st_teff: 5778,
+    st_rad: 1.0,
+    st_mass: 1.0,
+    st_logg: 4.44,
+    sy_dist: 0,
+    sy_pnum: 8,
+    sy_snum: 1,
+    discoverymethod: "Solar System",
+    isSolarSystem: true
+  }
+];
+
 const state = {
-  xField: "pl_orbsmax",
-  yField: "pl_bmasse",
+  xField: "pl_orbper",
+  yField: "pl_radj",
   colorField: "disc_year",
   discoveryYearUpperBound: discoveryYearMax,
   data: [],
@@ -47,6 +218,8 @@ const state = {
   isYearPlaybackRunning: false,
   isYearSliderDragging: false,
   interactionMode: "pan",
+  showSolarSystem: true,
+  selectedPlanet: null,
 };
 
 let tooltip = null;
@@ -85,13 +258,27 @@ function isValidNumber(value) {
 
 function parseDataRow(row) {
   scatterDimensions.forEach((field) => {
-    row[field] = row[field] === "" ? null : +row[field];
+    row[field] = row[field] === "" || row[field] === undefined ? null : +row[field];
   });
+
+  // Calculate missing Jupiter/Earth values
+  if (row.pl_bmasse == null && row.pl_bmassj != null) {
+    row.pl_bmasse = row.pl_bmassj * 317.8;
+  } else if (row.pl_bmassj == null && row.pl_bmasse != null) {
+    row.pl_bmassj = row.pl_bmasse / 317.8;
+  }
+
+  if (row.pl_rade == null && row.pl_radj != null) {
+    row.pl_rade = row.pl_radj * 11.2;
+  } else if (row.pl_radj == null && row.pl_rade != null) {
+    row.pl_radj = row.pl_rade / 11.2;
+  }
 
   return row;
 }
 
 function fieldLabel(field) {
+  if (field === "discoverymethod") return "Discovery Method";
   const entry = state.glossaryByColumn.get(field);
   return entry ? entry.name : field;
 }
@@ -222,11 +409,15 @@ function updateLegend(data = state.data) {
   legend.html("");
 
   const field = state.colorField;
+  const isCategorical = field === "sy_snum" || field === "sy_pnum" || field === "discoverymethod";
   const values = data
     .map((d) => d[field])
-    .filter((value) =>
-      logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value),
-    );
+    .filter((value) => {
+      if (field === "discoverymethod") {
+        return value != null && value !== "";
+      }
+      return logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value);
+    });
   if (!values.length) {
     legend.html("<div class='legend-caption'>No color data</div>");
     return;
@@ -239,8 +430,8 @@ function updateLegend(data = state.data) {
     .style("margin-bottom", "10px")
     .style("font-weight", "bold");
 
-  if (field === "sy_snum" || field === "sy_pnum") {
-    const unique = Array.from(new Set(values)).sort((a, b) => a - b);
+  if (isCategorical) {
+    const unique = Array.from(new Set(values)).sort();
     const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(unique);
 
     const wrap = legend
@@ -311,15 +502,19 @@ function updateLegend(data = state.data) {
 
 function createColorScale(data = state.data) {
   const field = state.colorField;
+  const isCategorical = field === "sy_snum" || field === "sy_pnum" || field === "discoverymethod";
   const values = data
     .map((d) => d[field])
-    .filter((value) =>
-      logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value),
-    );
+    .filter((value) => {
+      if (field === "discoverymethod") {
+        return value != null && value !== "";
+      }
+      return logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value);
+    });
   if (!values.length) return () => "#8ea0b8";
 
-  if (field === "sy_snum" || field === "sy_pnum") {
-    const unique = Array.from(new Set(values)).sort((a, b) => a - b);
+  if (isCategorical) {
+    const unique = Array.from(new Set(values)).sort();
     return d3.scaleOrdinal(d3.schemeCategory10).domain(unique);
   } else {
     const [minVal, maxVal] = d3.extent(values);
@@ -532,6 +727,15 @@ function buildControls() {
     drawScatterplot();
   });
 
+  const solarToggle = d3.select("#solar-system-toggle");
+  if (solarToggle.node()) {
+    solarToggle.property("checked", state.showSolarSystem);
+    solarToggle.on("change", function () {
+      state.showSolarSystem = this.checked;
+      drawScatterplot();
+    });
+  }
+
   const discoveryYearSlider = d3.select("#discovery-year-slider");
   discoveryYearSlider
     .attr("min", discoveryYearMin)
@@ -694,13 +898,26 @@ function drawScatterplot() {
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  const scaleData = state.data.filter(
+  let scaleData = state.data.filter(
     (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
   );
+  if (state.showSolarSystem) {
+    const scaleSolar = solarSystemPlanets.filter(
+      (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
+    );
+    scaleData = [...scaleData, ...scaleSolar];
+  }
+
   const filteredData = getYearFilteredData();
-  const validData = filteredData.filter(
+  let validData = filteredData.filter(
     (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
   );
+  if (state.showSolarSystem) {
+    const validSolar = solarSystemPlanets.filter(
+      (d) => isValidNumber(d[state.xField]) && isValidNumber(d[state.yField]),
+    );
+    validData = [...validData, ...validSolar];
+  }
 
   updateHeaderMetric(validData.length, filteredData.length, state.data.length);
 
@@ -837,9 +1054,11 @@ function drawScatterplot() {
     __x: xScaleInfo.scale(d[state.xField]),
     __y: yScaleInfo.scale(d[state.yField]),
     __color:
-      colorScale && isValidNumber(d[state.colorField])
-        ? colorScale(d[state.colorField])
-        : "#8ea0b8",
+      d.isSolarSystem
+        ? "#ffca28"
+        : (colorScale && isValidNumber(d[state.colorField])
+            ? colorScale(d[state.colorField])
+            : "#8ea0b8"),
   }));
 
   function visibleDataForTransform(transform) {
@@ -870,8 +1089,10 @@ function drawScatterplot() {
     context.fill();
     context.clip();
 
+    // 1. Draw normal exoplanets first
     context.globalAlpha = 0.86;
     for (const d of visibleData) {
+      if (d.isSolarSystem) continue;
       const x = margin.left + transform.applyX(d.__x);
       const y = margin.top + transform.applyY(d.__y);
 
@@ -880,6 +1101,46 @@ function drawScatterplot() {
       context.fillStyle = d.__color;
       context.fill();
     }
+
+    // 2. Draw Solar System planets on top so they are never hidden!
+    context.globalAlpha = 1.0;
+    for (const d of visibleData) {
+      if (!d.isSolarSystem) continue;
+      const x = margin.left + transform.applyX(d.__x);
+      const y = margin.top + transform.applyY(d.__y);
+
+      context.beginPath();
+      context.arc(x, y, pointRadius * 1.5, 0, Math.PI * 2);
+      context.fillStyle = "#ffca28"; // distinct gold
+      context.fill();
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 1.8;
+      context.stroke();
+
+      // Label on canvas
+      context.fillStyle = "#ffffff";
+      context.font = "bold 10px sans-serif";
+      context.shadowColor = "rgba(0, 0, 0, 0.85)";
+      context.shadowBlur = 3;
+      context.fillText(d.pl_name, x + pointRadius * 1.5 + 4, y + 3.5);
+      context.shadowBlur = 0; // Reset
+    }
+
+    // 3. Draw selection ring if a planet is selected
+    if (state.selectedPlanet) {
+      const d = state.selectedPlanet;
+      const isVisible = visibleData.some(p => p.pl_name === d.pl_name);
+      if (isVisible) {
+        const x = margin.left + transform.applyX(d.__x);
+        const y = margin.top + transform.applyY(d.__y);
+        context.beginPath();
+        context.arc(x, y, (d.isSolarSystem ? pointRadius * 1.5 : pointRadius) + 4, 0, Math.PI * 2);
+        context.strokeStyle = "#ffca28";
+        context.lineWidth = 2.5;
+        context.stroke();
+      }
+    }
+    
     context.restore();
   }
 
@@ -918,7 +1179,16 @@ function drawScatterplot() {
         hideTooltip();
       }
     })
-    .on("mouseleave", hideTooltip);
+    .on("mouseleave", hideTooltip)
+    .on("click", function (event) {
+      const [x, y] = d3.pointer(event, this);
+      const nearest = nearestPointAt(x, y, latestZoomTransform);
+      if (nearest) {
+        selectPlanet(nearest);
+      } else {
+        deselectPlanet();
+      }
+    });
 
   const minimapWidth = width < 640 ? 118 : 156;
   const minimapHeight = width < 640 ? 86 : 108;
@@ -1206,3 +1476,92 @@ Promise.all([
         `);
     d3.select("#plot-note").text(error.message);
   });
+
+function selectPlanet(d) {
+  state.selectedPlanet = d;
+  updateInfocard(d);
+  drawScatterplot();
+}
+
+function deselectPlanet() {
+  state.selectedPlanet = null;
+  clearInfocard();
+  drawScatterplot();
+}
+
+function updateInfocard(d) {
+  const card = document.getElementById("planet-infocard");
+  const contentDiv = document.getElementById("infocard-content");
+
+  if (!card || !contentDiv) return;
+
+  let html = `
+    <div class="infocard-layout">
+      <aside class="infocard-planet-name">
+        <p class="infocard-kicker">Selected planet</p>
+        <h2>${escapeHtml(d.pl_name || "Unknown Planet")}</h2>
+        <p>${escapeHtml(d.hostname || "Unknown host")}</p>
+        <p style="margin-top: 15px;">
+          <a href="https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=PS&constraint=pl_name+like+%27${encodeURIComponent(d.pl_name)}%27" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: bold;">
+            NASA Exoplanet Archive ↗
+          </a>
+        </p>
+        <p style="margin-top: 5px;">
+          <a href="spiderplot.html?planet=${encodeURIComponent(d.pl_name)}" style="color: var(--accent-2); text-decoration: underline; font-weight: bold;">
+            Compare in Spiderplot ↗
+          </a>
+        </p>
+      </aside>
+      <div class="infocard-data">
+        <p class="infocard-note">Orbital, planetary, and stellar parameters</p>
+        <table>
+  `;
+
+  const fieldsToShow = [
+    { key: "hostname", label: "Host Name" },
+    { key: "disc_year", label: "Discovery Year" },
+    { key: "discoverymethod", label: "Discovery Method" },
+    { key: "sy_snum", label: "Number of Stars" },
+    { key: "sy_pnum", label: "Number of Planets" },
+    { key: "pl_orbper", label: "Orbital Period [days]" },
+    { key: "pl_orbsmax", label: "Semi-Major Axis [au]" },
+    { key: "pl_rade", label: "Planet Radius [Earth Radius]" },
+    { key: "pl_radj", label: "Planet Radius [Jupiter Radius]" },
+    { key: "pl_bmasse", label: "Planet Mass [Earth Mass]" },
+    { key: "pl_bmassj", label: "Planet Mass [Jupiter Mass]" },
+    { key: "pl_eqt", label: "Equilibrium Temperature [K]" },
+    { key: "st_teff", label: "Stellar Temp [K]" },
+    { key: "st_rad", label: "Stellar Radius [Solar Radius]" },
+    { key: "st_mass", label: "Stellar Mass [Solar Mass]" },
+    { key: "sy_dist", label: "Distance [pc]" }
+  ];
+
+  fieldsToShow.forEach(field => {
+    const val = d[field.key];
+    if (val !== undefined && val !== null && val !== "") {
+      const displayVal = typeof val === "number" ? val.toLocaleString() : val;
+      html += `
+        <tr>
+          <td style="font-weight: bold; padding-right: 15px;">${field.label}:</td>
+          <td>${displayVal}</td>
+        </tr>
+      `;
+    }
+  });
+
+  html += `
+        </table>
+      </div>
+    </div>
+  `;
+
+  contentDiv.innerHTML = html;
+  card.style.display = "block";
+}
+
+function clearInfocard() {
+  const card = document.getElementById("planet-infocard");
+  if (card) {
+    card.style.display = "none";
+  }
+}

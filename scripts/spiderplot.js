@@ -149,6 +149,16 @@ function preparePlanets(rows) {
                 planet[metric.key] = toNumber(row[metric.key]);
             });
 
+            // Derive missing Earth metrics if Jupiter metrics are present
+            const radjVal = toNumber(row.pl_radj);
+            const bmassjVal = toNumber(row.pl_bmassj);
+            if (planet.pl_rade == null && radjVal != null) {
+                planet.pl_rade = radjVal * 11.2;
+            }
+            if (planet.pl_bmasse == null && bmassjVal != null) {
+                planet.pl_bmasse = bmassjVal * 317.8;
+            }
+
             planet.knownMetricCount = countKnownMetrics(planet);
             return planet;
         })
@@ -202,11 +212,55 @@ function polarPoint(center, radius, angle, value = 1) {
     };
 }
 
+function getLinearTicks(max) {
+    if (max <= 0) return [0.5, 1];
+    const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
+    const normalized = max / magnitude;
+    
+    let step;
+    if (normalized >= 5) step = magnitude;
+    else if (normalized >= 2.5) step = magnitude * 0.5;
+    else step = magnitude * 0.2;
+    
+    const ticks = [];
+    let current = step;
+    while (current <= max) {
+        ticks.push(current);
+        current += step;
+    }
+    return ticks;
+}
+
+function getLogTicks(max) {
+    const ticks = [];
+    if (max <= 0) return [0.1, 1];
+    let val = 1;
+    if (max <= 1) {
+        val = 0.1;
+        while (val <= max) {
+            ticks.push(val);
+            val *= 10;
+        }
+    } else {
+        let p = 1;
+        while (p <= max) {
+            ticks.push(p);
+            p *= 10;
+        }
+        if (ticks.length < 3) {
+            if (max >= 5) ticks.push(0.5, 2, 5);
+            else if (max >= 2) ticks.push(0.5, 2);
+            ticks.sort((a, b) => a - b);
+        }
+    }
+    return ticks.filter(v => v <= max);
+}
+
 function createSpiderSvg(planets, options = {}) {
     const size = options.size || 620;
     const center = size / 2;
     const radius = options.radius || size * 0.28;
-    const labelRadius = radius + (options.mini ? 18 : 42);
+    const labelRadius = radius + (options.mini ? 18 : 34);
     const chartMetrics = options.metrics || metrics;
     const axisCount = chartMetrics.length;
     const gridLevels = options.mini ? 3 : 5;
@@ -237,46 +291,39 @@ function createSpiderSvg(planets, options = {}) {
 
         const [min, max] = state.domains.get(metric.key) || [0, 1];
         
-        // Skip fraction 0 to avoid overlapping at the center.
-        const allLevels = Array.from({ length: gridLevels }, (_, level) => (level + 1) / gridLevels);
+        const ticks = state.scaleMode === "log" ? getLogTicks(max) : getLinearTicks(max);
         
-        const axisValuesHtml = allLevels.map((fraction) => {
+        const axisValuesHtml = ticks.map((v) => {
+            let fraction;
+            if (state.scaleMode === "log") {
+                fraction = Math.log1p(v) / Math.log1p(max);
+            } else {
+                fraction = v / max;
+            }
             const pos = polarPoint(center, radius, angle, fraction);
             
-            let val;
-            if (state.scaleMode === "log") {
-                val = Math.expm1(fraction * Math.log1p(max));
-            } else {
-                val = min + fraction * (max - min);
-            }
-            
             let valText;
-            if (val >= 1000) {
-                valText = Math.round(val).toLocaleString();
-            } else if (val >= 10) {
-                valText = Number(val.toFixed(1)).toLocaleString();
-            } else {
-                valText = Number(val.toFixed(3)).toLocaleString();
-            }
+            if (v >= 1000000) valText = (v / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+            else if (v >= 1000) valText = (v / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+            else if (v >= 10) valText = Math.round(v).toLocaleString();
+            else if (v >= 1) valText = Number(v.toFixed(1)).toLocaleString();
+            else valText = Number(v.toFixed(3)).toLocaleString();
             
             let textAnchor = pos.x >= center - 1 ? "start" : "end";
-            let dx = pos.x >= center - 1 ? 4 : -4;
-            let dy = -4;
+            let dx = pos.x >= center - 1 ? 5 : -5;
+            let dy = 3; // Vertically center a bit better
 
             return `<text class="radar-axis-value" x="${pos.x}" y="${pos.y}" text-anchor="${textAnchor}" dx="${dx}" dy="${dy}">${valText}</text>`;
         }).join("");
 
-        const minText = min >= 1000 ? Math.round(min).toLocaleString() : min >= 10 ? Number(min.toFixed(1)).toLocaleString() : Number(min.toFixed(3)).toLocaleString();
-        const maxText = max >= 1000 ? Math.round(max).toLocaleString() : max >= 10 ? Number(max.toFixed(1)).toLocaleString() : Number(max.toFixed(3)).toLocaleString();
-        const subtitle = !options.mini ? `<text class="radar-subtitle" x="${label.x}" y="${label.y + 14}" text-anchor="${anchor}">[${minText} - ${maxText} ${metric.unit}, ${state.scaleMode}]</text>` : "";
+        const labelText = `${metric.label} (${metric.unit})`;
 
         return `
             <g class="radar-axis-group">
                 <line class="radar-axis-hover" x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}"></line>
                 <line class="radar-axis" x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}"></line>
                 ${axisValuesHtml}
-                <text class="radar-label" x="${label.x}" y="${label.y}" text-anchor="${anchor}">${metric.label}</text>
-                ${subtitle}
+                <text class="radar-label" x="${label.x}" y="${label.y}" text-anchor="${anchor}">${labelText}</text>
             </g>
         `;
     }).join("");
@@ -486,7 +533,15 @@ function updatePlanetSelect() {
 
     const query = input.value;
     const selectedNames = new Set(state.selected.map(planet => planet.pl_name));
-    const comparePlanets = state.allPlanets.filter(isCompareEligible);
+    
+    let comparePlanets = state.allPlanets.filter(isCompareEligible);
+    
+    // Apply same-system filter if checked and there is at least one selected planet
+    const sameSystemToggle = document.querySelector("#same-system-filter");
+    if (sameSystemToggle && sameSystemToggle.checked && state.selected.length > 0) {
+        const refHost = state.selected[0].hostname;
+        comparePlanets = comparePlanets.filter(p => p.hostname === refHost);
+    }
     
     // Auto-add exact match
     const exactMatch = comparePlanets.find(p => `${p.pl_name} (${p.hostname})` === query && !selectedNames.has(p.pl_name));
@@ -577,6 +632,29 @@ function renderCompareChart() {
         }
     });
 
+    // Check for missing metrics
+    const warning = document.querySelector("#spider-warning");
+    if (warning) {
+        const missingList = [];
+        visiblePlanets.forEach(planet => {
+            const missingMetrics = visibleMetrics.filter(m => planet[m.key] == null);
+            if (missingMetrics.length > 0) {
+                missingList.push({
+                    name: planet.pl_name,
+                    metrics: missingMetrics.map(m => m.label)
+                });
+            }
+        });
+
+        if (missingList.length > 0) {
+            warning.style.display = "block";
+            warning.innerHTML = `⚠️ <strong>Missing Data Warning:</strong><br/>` + 
+                missingList.map(item => `• <strong>${item.name}</strong> has no data for: ${item.metrics.join(", ")}`).join("<br/>");
+        } else {
+            warning.style.display = "none";
+        }
+    }
+
     legend.innerHTML = state.selected.map((planet, index) => `
         <span class="legend-item" style="opacity: ${planet._hidden ? '0.4' : '1'}">
             <span class="color-dot" style="background:${planet._hidden ? '#555' : colors[index]}"></span>
@@ -593,6 +671,19 @@ function updateCompareView() {
 }
 
 function getDefaultComparePlanets() {
+    const params = new URLSearchParams(window.location.search);
+    const targetPlanetName = params.get("planet");
+    if (targetPlanetName) {
+        const found = state.allPlanets.find(planet => planet.pl_name.toLowerCase() === targetPlanetName.toLowerCase());
+        if (found) {
+            const others = ["TRAPPIST-1 e", "55 Cnc e"]
+                .filter(name => name.toLowerCase() !== targetPlanetName.toLowerCase())
+                .map(name => state.allPlanets.find(planet => planet.pl_name === name && isCompareEligible(planet)))
+                .filter(Boolean);
+            return [found, ...others].slice(0, 3);
+        }
+    }
+
     const examples = ["TRAPPIST-1 e", "55 Cnc e", "WASP-76 b"];
     const selected = examples
         .map(name => state.allPlanets.find(planet => planet.pl_name === name && isCompareEligible(planet)))
@@ -619,6 +710,11 @@ function initCompareView() {
     updateCompareView();
 
     search.addEventListener("input", updateCompareView);
+
+    const sameSystemToggle = document.querySelector("#same-system-filter");
+    if (sameSystemToggle) {
+        sameSystemToggle.addEventListener("change", updateCompareView);
+    }
 
     if (scaleMode) {
         scaleMode.value = state.scaleMode;
@@ -930,3 +1026,30 @@ function init() {
 }
 
 init();
+
+function loadPreset(presetType) {
+    state.selected = [];
+    let names = [];
+    if (presetType === 'trappist') {
+        names = ["TRAPPIST-1 b", "TRAPPIST-1 c", "TRAPPIST-1 d", "TRAPPIST-1 e"];
+    } else if (presetType === 'hotjupiters') {
+        names = ["51 Peg b", "WASP-76 b", "CoRoT-1 b", "HAT-P-7 b"];
+    } else if (presetType === 'superearths') {
+        names = ["55 Cnc e", "K2-18 b", "LHS 1140 b", "GJ 1214 b"];
+    }
+    
+    names.forEach(name => {
+        const found = state.allPlanets.find(p => p.pl_name.toLowerCase() === name.toLowerCase());
+        if (found) {
+            state.selected.push(found);
+        }
+    });
+
+    if (state.selected.length === 0 && presetType === 'trappist') {
+        const list = state.allPlanets.filter(p => p.hostname && p.hostname.includes("TRAPPIST-1")).slice(0, 4);
+        state.selected.push(...list);
+    }
+
+    updateCompareView();
+}
+window.loadPreset = loadPreset;

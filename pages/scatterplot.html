@@ -58,7 +58,13 @@
                         <option value="sy_pnum">System Planet Count</option>
                         <option value="pl_bmasse">Planet Mass [Earth Mass] (log)</option>
                         <option value="pl_eqt">Equilibrium Temp (K)</option>
+                        <option value="discoverymethod">Discovery Method</option>
                     </select>
+                    
+                    <div style="margin: 15px 0; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: white;">
+                        <input type="checkbox" id="solar-system-toggle" checked style="cursor: pointer; width: 16px; height: 16px;">
+                        <label for="solar-system-toggle" style="cursor: pointer; user-select: none;">Show Solar System</label>
+                    </div>
                     
                     <button id="reset-zoom" class="action-btn" style="width: 100%; margin-bottom: 20px;">Reset Zoom</button>
                 </div>
@@ -89,8 +95,10 @@
                 </div>
                 <div id="plot-note" class="plot-note">Loading NASA export data and glossary...</div>
             </section>
-        </div>
-        
+        <section id="planet-infocard" class="panel infocard" style="display: none; margin: 16px 0; padding: 20px;">
+            <div id="infocard-content"></div>
+        </section>
+
         <section class="panel column-explanation">
             <h2>Data Fields & Definitions</h2>
             <p>The following columns from the NASA exoplanet archive are used in this plot.</p>

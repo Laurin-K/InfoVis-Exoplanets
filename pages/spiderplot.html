@@ -30,10 +30,21 @@
                 <label class="control-label" for="planet-search">Search & Add Planet</label>
                 <input id="planet-search" type="search" list="planet-datalist" placeholder="Type a planet name...">
                 <datalist id="planet-datalist"></datalist>
+                <div style="margin: 8px 0 12px 0; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="same-system-filter" style="cursor: pointer; width: 14px; height: 14px;">
+                    <label for="same-system-filter" style="cursor: pointer; font-size: 0.82rem; color: var(--muted); user-select: none;">Same stellar system only</label>
+                </div>
 
                 <p id="selection-note" class="note">Choose 1 to 4 planets. Search only shows planets with at least 3 known values.</p>
                 <div id="selected-planets" class="selected-planets" style="margin-bottom: 24px;"></div>
                 
+                <p class="control-label" style="margin-top: 16px; margin-bottom: 8px;">Compare Presets</p>
+                <div class="preset-buttons" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
+                    <button class="action-btn outline" type="button" onclick="loadPreset('trappist')" style="text-align: left; padding: 8px 12px; font-size: 0.85rem; cursor: pointer; width: 100%;">🪐 TRAPPIST-1 System</button>
+                    <button class="action-btn outline" type="button" onclick="loadPreset('hotjupiters')" style="text-align: left; padding: 8px 12px; font-size: 0.85rem; cursor: pointer; width: 100%;">🔥 Hot Jupiters</button>
+                    <button class="action-btn outline" type="button" onclick="loadPreset('superearths')" style="text-align: left; padding: 8px 12px; font-size: 0.85rem; cursor: pointer; width: 100%;">💎 Rocky Super-Earths</button>
+                </div>
+
                 <hr style="border: none; border-top: 1px solid rgba(178,207,222,0.18); margin: 0 0 16px 0;">
 
                 <div style="margin-bottom: 16px;">
@@ -62,6 +73,7 @@
             <section class="panel chart-panel">
                 <div class="chart-container">
                     <div class="chart-main">
+                        <div id="spider-warning" class="warning-banner" style="display: none; background: rgba(243, 178, 109, 0.15); color: #f3b26d; border: 1px solid rgba(243, 178, 109, 0.3); padding: 12px; margin-bottom: 16px; border-radius: 8px; font-size: 0.9rem; line-height: 1.4;"></div>
                         <div id="spider-chart"></div>
                         <div id="spider-legend" class="legend"></div>
                     </div>
