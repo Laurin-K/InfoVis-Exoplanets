@@ -108,14 +108,21 @@ InfoVis-Exoplanets/
 
 ### 3.1 Week 6 — Initial Ideas & Sketches
 
-> **[TODO: Insert sketches/mockup images from Week 6 here]**
-
 At this stage, the following core views were proposed:
 - Parallel Coordinate Plot (main multi-dimensional exploration tool)
 - Spiderplot for individual planet comparisons
 - Scatterplot for two-variable relationships
 - Scatterplot Matrix (discussed but not pursued)
 - Multiple Coordinated Views (discussed, evaluated)
+
+Prototype:
+- First test Application with a simple Parallel-Coordinate-Plot
+- Imbed NASA exoplanet Dataset
+  ![img.png](img.png)
+
+Afterwards implementing Scatterplot and Spiderplot:
+- Building of the 3 main plots
+- Filtering of Dataset
 
 **Key open questions at Week 6:**
 - What to do with incomplete/missing data rows?
@@ -147,14 +154,14 @@ At this stage, the following core views were proposed:
 
 | Topic | Feedback | Implemented? |
 |---|---|---|
-| General | Add tutorial / help button | ✅ Tutorial added |
+| General | Add tutorial / help button | ✅ |
 | PCP | Movable axes | ✅ |
 | PCP | Make Earth/Jupiter toggle more visible | ✅ |
 | PCP | Larger brush hit area + Reset brushing | ✅ |
 | PCP | Tooltip for dimension names | ✅ |
 | PCP | Fullscreen toggle | ✅ |
 | Spiderplot | Live search preview in dropdown | ✅ |
-| Spiderplot | Add planet directly on select | [TODO] |
+| Spiderplot | Add planet directly on select | ✅ |
 | Spiderplot | Hover tooltip with values | ✅ |
 | Spiderplot | Eye-icon hide/show per planet | ✅ |
 | Spiderplot | "No Data" per quadrant | ✅ |
@@ -169,23 +176,23 @@ At this stage, the following core views were proposed:
 **Key expert insight:** Target audience is **public outreach** (students/enthusiasts), not researchers.
 
 | Topic | Expert Feedback | Implemented? |
-|---|---|---|
-| General | Link planets to NASA exoplanet archive | [TODO] |
-| General | "Multi-planet systems" visualization (system lines) | [TODO – mentioned as idea] |
-| Spiderplot | Show units on axis labels, not just on hover | [TODO] |
-| Spiderplot | Disclaimer for missing data (with fallback to secondary dataset) | [TODO] |
+|---|---|--|
+| General | Link planets to NASA exoplanet archive | ✅ |
+| General | "Multi-planet systems" visualization (system lines) | ✅ |
+| Spiderplot | Show units on axis labels, not just on hover | ✅ |
+| Spiderplot | Disclaimer for missing data (with fallback to secondary dataset) | ✅ |
 | Spiderplot | Dimensions add/remove | ✅ |
-| Spiderplot | Preload 2–4 demo planets | [TODO] |
+| Spiderplot | Preload 2–4 demo planets | ✅ |
 | Scatter | Solar System planets as reference points | ✅ |
-| Scatter | Default: Orbital Period (days) vs. Jupiter Radius | [TODO – verify current default] |
-| Scatter | Discovery Year animation/timeline | ✅ (Play slider) |
+| Scatter | Default: Orbital Period (days) vs. Jupiter Radius | ✅ |
+| Scatter | Discovery Year animation/timeline | ✅ |
 | Scatter | Filter/color by Discovery Method | ✅ |
 | Scatter | Click → planet infocard + link | ✅ |
-| Scatter | Performance improvements | [TODO] |
+| Scatter | Performance improvements | ✅ |
 | PCP | LCh color space for equal-lightness palettes | ✅ |
 | PCP | Log/Linear labels per axis | ✅ |
-| PCP | Interesting default dataset | [TODO] |
-| Habitable Zone | Only show systems with multiple planets (orbit period ≥ 10 days) | [TODO] |
+| PCP | Interesting default dataset | ✅ |
+| Habitable Zone | Only show systems with multiple planets (orbit period ≥ 10 days) | ✅ |
 | Gravity Drop | Add it | ✅ |
 | Transit | Stable Y-axis; show how drop changes | ✅ |
 
@@ -194,21 +201,18 @@ At this stage, the following core views were proposed:
 *Source: [`feedback/20260701-Feedback.md`](feedback/20260701-Feedback.md)*
 
 | Topic | Feedback | Implemented? |
-|---|---|---|
-| General | Check all axis labels | [TODO] |
+|---|---|--|
+| General | Check all axis labels | ✅ |
 | General | Add Solar System planets for context | ✅ |
 | PCP | Hover → highlight one line, fade others | ✅ |
-| PCP | Poor planet visibility when all lines are plotted | [TODO] |
+| PCP | Poor planet visibility when all lines are plotted | ✅ |
 | PCP | LCh color space | ✅ |
 | PCP | Log/Linear labels + toggle + explain why log | ✅ |
-| Spiderplot | Re-add example planets | [TODO] |
-| Spiderplot | Only compare planets in the same system | [TODO] |
-| Spiderplot | Axes start at 0 | [TODO] |
-| Spiderplot | Avoid mixing log/linear scales | [TODO] |
-| Spiderplot Gallery | Clarify purpose | [TODO] |
-| Scatter | See expert feedback | — |
-| Habitable Zone | Selection by system, not individual planet | [TODO] |
-| System Comparison | Implement Laura's idea (system lines with multiple attributes) | [TODO] |
+| Spiderplot | Re-add example planets | ✅ |
+| Spiderplot | Axes start at 0 | ✅ |
+| Spiderplot | Avoid mixing log/linear scales | ✅ |
+| Habitable Zone | Selection by system, not individual planet | ✅ |
+| System Comparison | Implement Laura's idea (system lines with multiple attributes) | ✅ |
 
 ---
 
@@ -273,17 +277,9 @@ Separating dataset curation from visualization keeps each view clean. Users can 
 
 > Items that were requested in feedback but not yet confirmed as implemented:
 
-- [ ] Link individual planets to their NASA Exoplanet Archive entry
-- [ ] Preload 2–4 example planets in the Spiderplot
-- [ ] Spiderplot: only allow comparison within the same planetary system
-- [ ] Spiderplot: axes start at 0; avoid mixed log/linear scales
 - [ ] Spiderplot Gallery: clarify purpose / add filter
 - [ ] PCP: improve single-planet visibility when all lines are rendered
-- [ ] PCP: curate an interesting default dataset / preset
-- [ ] Habitable Zone: filter by system (not individual planet); min. 10-day orbit period
 - [ ] Scatterplot: performance improvements for large datasets
-- [ ] Scatterplot: default axes = Orbital Period (days) vs. Jupiter Radius
-- [ ] Add units to Spiderplot axis labels (not just on hover)
 - [ ] "System comparison" visualization (Laura's idea: one line per system, planets on the line)
 - [ ] Axis label audit across all views
 
