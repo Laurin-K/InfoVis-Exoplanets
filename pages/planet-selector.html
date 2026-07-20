@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planet Selector</title>
+    <link rel="stylesheet" href="../styling/base.css">
+    <link rel="stylesheet" href="../styling/navigation.css">
+    <link rel="stylesheet" href="../styling/planet-selector.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="../scripts/navigation.js" defer></script>
+    <script src="../scripts/planet-selector.js" defer></script>
+</head>
+<body>
+    <div class="page-shell">
+        <!-- Navigation injected via navigation.js -->
+        
+        <header>
+            <p class="eyebrow">Data Control</p>
+            <h1>Planet Selector</h1>
+            <p class="subtitle">
+                Select specific planets or entire star systems to be displayed across all visualizations.
+            </p>
+        </header>
+
+        <main class="selector-container">
+            <aside class="sidebar filters-panel">
+                <h2>Quick Presets</h2>
+                <div class="preset-buttons">
+                    <button id="preset-all" class="btn-preset">Select All</button>
+                    <button id="preset-none" class="btn-preset">Clear All</button>
+                    <button id="preset-earth" class="btn-preset">Earth-sized (0.5 - 2 R⊕)</button>
+                    <button id="preset-jupiter" class="btn-preset">Gas Giants (> 5 R⊕)</button>
+                    <button id="preset-trappist" class="btn-preset">TRAPPIST-1 System</button>
+                    <button id="preset-solar" class="btn-preset">Solar System</button>
+                    <button id="preset-recent" class="btn-preset">Recent Discoveries (≥ 2020)</button>
+                </div>
+
+                <h2>Search & Filter</h2>
+                <div class="filter-group">
+                    <label for="search-input">Search Planet or System</label>
+                    <input type="text" id="search-input" placeholder="e.g. Kepler-186, TRAPPIST...">
+                </div>
+                
+                <div class="filter-group">
+                    <label>Discovery Year</label>
+                    <div class="range-inputs">
+                        <input type="number" id="year-min" placeholder="Min" min="1990" max="2030">
+                        <span>-</span>
+                        <input type="number" id="year-max" placeholder="Max" min="1990" max="2030">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Radius (Earth Radii)</label>
+                    <div class="range-inputs">
+                        <input type="number" id="rad-min" placeholder="Min" step="0.1">
+                        <span>-</span>
+                        <input type="number" id="rad-max" placeholder="Max" step="0.1">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Mass (Earth Masses)</label>
+                    <div class="range-inputs">
+                        <input type="number" id="mass-min" placeholder="Min" step="0.1">
+                        <span>-</span>
+                        <input type="number" id="mass-max" placeholder="Max" step="0.1">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Orbital Period (Days)</label>
+                    <div class="range-inputs">
+                        <input type="number" id="period-min" placeholder="Min" step="0.1">
+                        <span>-</span>
+                        <input type="number" id="period-max" placeholder="Max" step="0.1">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Distance (Parsecs)</label>
+                    <div class="range-inputs">
+                        <input type="number" id="dist-min" placeholder="Min" step="0.1">
+                        <span>-</span>
+                        <input type="number" id="dist-max" placeholder="Max" step="0.1">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Stellar Temp. (K)</label>
+                    <div class="range-inputs">
+                        <input type="number" id="temp-min" placeholder="Min" step="10">
+                        <span>-</span>
+                        <input type="number" id="temp-max" placeholder="Max" step="10">
+                    </div>
+                </div>
+
+                <button id="apply-filters-btn" class="primary-btn">Filter List</button>
+
+                <div class="status-panel">
+                    <h3>Selection Status</h3>
+                    <p><span id="selected-count">0</span> planets selected</p>
+                    <button id="save-selection-btn" class="primary-btn success">Apply Selection to App</button>
+                </div>
+            </aside>
+
+            <section class="list-panel">
+                <div class="list-header">
+                    <h2>Available Planets (<span id="total-count">0</span> matching)</h2>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="check-all-visible">
+                        Select All Visible
+                    </label>
+                </div>
+                
+                <div class="planet-list" id="planet-list">
+                    <!-- Planet list items injected by JS -->
+                    <div class="loading-state">Loading exoplanet data...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

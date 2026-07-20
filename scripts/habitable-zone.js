@@ -51,7 +51,7 @@ const maxOrbitRadiusPx = Math.min(cx, cy) * 0.9;
 let scaleAu = d3.scaleLinear().range([0, maxOrbitRadiusPx]);
 
 // Load Data
-d3.csv("../data/nasa_export_small.csv", (d) => {
+d3.csv("../data/api_only_export.csv", (d) => {
   // We need planets with valid st_teff, st_rad, and pl_orbsmax
   const st_teff = +d.st_teff;
   const st_rad = +d.st_rad;
@@ -80,7 +80,19 @@ d3.csv("../data/nasa_export_small.csv", (d) => {
   }
   return null;
 }).then((data) => {
-  state.planets = data.filter((d) => d !== null);
+  let planets = data.filter((d) => d !== null);
+
+  const saved = localStorage.getItem('selected_planets');
+  if (saved) {
+      try {
+          const selectedSet = new Set(JSON.parse(saved));
+          if (selectedSet.size > 0) {
+              planets = planets.filter(d => selectedSet.has(d.name));
+          }
+      } catch(e) {}
+  }
+
+  state.planets = planets;
   state.systems = buildSystems(state.planets);
 
   selectEl

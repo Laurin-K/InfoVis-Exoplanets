@@ -420,6 +420,14 @@ input:checked + .slider::before {
   font-size: 12px;
 }
 
+.dimension .tick:first-of-type text,
+.dimension .tick:last-of-type text {
+  font-weight: bold;
+  fill: #ffca28 !important;
+  font-size: 13px;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
 .dimension > text {
   fill: #f4f7ff !important;
   font-size: 13px;
@@ -430,6 +438,7 @@ input:checked + .slider::before {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.12em;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.9);
 }
 
 .scale-tag-log {

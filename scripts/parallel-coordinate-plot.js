@@ -38,7 +38,11 @@ function getIntegerTickValues(domain) {
     const max = Math.floor(domain[1]);
     if (max < min) return [];
 
-    return d3.range(min, max + 1);
+    const count = max - min + 1;
+    if (count <= 15) {
+        return d3.range(min, max + 1);
+    }
+    return null;
 }
 
 function formatBrushValue(dim, value) {
@@ -296,7 +300,7 @@ let fullData = [];
 let columnExplanations = {};
 
 Promise.all([
-    d3.csv("../data/nasa_export_small.csv", d => {
+    d3.csv("../data/api_only_export.csv", d => {
         // Convert all numeric strings into numbers so newly checked dimensions scale correctly
         Object.keys(d).forEach(key => {
             if (d[key] === "" || d[key].trim() === "") {
@@ -305,10 +309,48 @@ Promise.all([
                 d[key] = +d[key];
             }
         });
+        // Derive missing values for Earth/Jupiter Mass & Radius
+        if (d.pl_bmasse == null && d.pl_bmassj != null) {
+            d.pl_bmasse = d.pl_bmassj * 317.8;
+        } else if (d.pl_bmassj == null && d.pl_bmasse != null) {
+            d.pl_bmassj = d.pl_bmasse / 317.8;
+        }
+        if (d.pl_rade == null && d.pl_radj != null) {
+            d.pl_rade = d.pl_radj * 11.2;
+        } else if (d.pl_radj == null && d.pl_rade != null) {
+            d.pl_radj = d.pl_rade / 11.2;
+        }
         return d;
     }),
     fetch("../data/column_explanation.csv").then(response => response.text())
 ]).then(([data, explanationsCsv]) => {
+    // Apply Planet Selection
+    const saved = localStorage.getItem('selected_planets');
+    if (saved) {
+        try {
+            const selectedSet = new Set(JSON.parse(saved));
+            if (selectedSet.size > 0) {
+                data = data.filter(d => selectedSet.has(d.pl_name));
+            }
+        } catch(e) {}
+    }
+
+    const MAX_LINES = 250;
+    const warningBanner = document.getElementById("sampling-warning");
+    if (data.length > MAX_LINES) {
+        if (warningBanner) {
+            warningBanner.style.display = "block";
+            warningBanner.innerHTML = `⚠️ Showing a random sample of ${MAX_LINES} planets (out of ${data.length} selected) to maintain performance.`;
+        }
+        // Shuffle and slice
+        d3.shuffle(data);
+        data = data.slice(0, MAX_LINES);
+    } else {
+        if (warningBanner) {
+            warningBanner.style.display = "none";
+        }
+    }
+
     fullData = data;
     parseColumnExplanations(explanationsCsv);
     createTableFromCSV(explanationsCsv);
@@ -422,9 +464,11 @@ function draw(dimensions)
         const dimAxis = d3.axisLeft(y[dim]);
 
         if (isIntegerCountField(dim)) {
-            dimAxis
-                .tickValues(getIntegerTickValues(y[dim].domain()))
-                .tickFormat(d3.format("d"));
+            const ticks = getIntegerTickValues(y[dim].domain());
+            if (ticks) {
+                dimAxis.tickValues(ticks);
+            }
+            dimAxis.tickFormat(d3.format("d"));
         }
 
         return dimAxis;
@@ -552,7 +596,7 @@ function draw(dimensions)
         .each(function(dim) {
             
             const brush = d3.brushY()
-                .extent([[-20, 0], [20, height]]) // increased from -10, 10
+                .extent([[-40, 0], [40, height]])
                 .on("start brush end", function(event) {
                     brushed(event, dim, this);
                 });
@@ -1087,6 +1131,11 @@ function focusDatalineOnHover(d) {
     hoveredPlanetName = d.pl_name;
 
     if (hoverRenderer) hoverRenderer.focus(d);
+
+    // Dim all non-hovered lines
+    d3.selectAll(".line-group")
+        .classed("hovered", lineData => lineData.pl_name === d.pl_name)
+        .classed("hover-dimmed", lineData => lineData.pl_name !== d.pl_name);
 }
 
 function clearHoverFocus(force = false) {
@@ -1101,10 +1150,18 @@ function clearHoverFocus(force = false) {
         hoveredPlanetName = null;
         if (hoverRenderer) hoverRenderer.clear();
 
+        // Clear hover states
+        d3.selectAll(".line-group")
+            .classed("hovered", false)
+            .classed("hover-dimmed", false);
+
         if (selectedPlanet) {
             d3.selectAll(".line-group")
                 .classed("selected", function(lineData) { return lineData.pl_name === selectedPlanet.pl_name; })
                 .classed("dimmed", function(lineData) { return lineData.pl_name !== selectedPlanet.pl_name; });
+        } else {
+            d3.selectAll(".line-group")
+                .classed("dimmed", false);
         }
     };
 
@@ -1279,9 +1336,15 @@ function resetBrushing() {
     for (let dim in brushes) {
         brushes[dim] = null;
     }
-    d3.selectAll(".brush").call(d3.brushY().move, null);
+    // Remove brush selection in SVG
+    d3.selectAll(".brush").each(function() {
+        if (this.__brush) {
+            d3.select(this).call(this.__brush.move, null);
+        }
+    });
     d3.selectAll(".brush-max, .brush-min").property("value", "");
-    d3.selectAll(".line").style("display", null);
+    d3.selectAll(".reset-dim-brush").property("disabled", true);
+    d3.selectAll(".line-group").style("display", null);
 }
 
 function toggleFullscreen() {
