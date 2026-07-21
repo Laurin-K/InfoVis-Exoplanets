@@ -503,15 +503,15 @@ function draw(dimensions)
                 dimensions.sort(function(a, b) { return position(a) - position(b); });
                 x.domain(dimensions);
                 g.attr("transform", function(d) { return "translate(" + position(d) + ")"; });
-                svg.selectAll(".line-dashed").attr("d", backgroundPath);
-                svg.selectAll(".line-solid").attr("d", foregroundPath);
+                svg.selectAll(".line-group .line-dashed").attr("d", backgroundPath);
+                svg.selectAll(".line-group .line-solid").attr("d", foregroundPath);
             })
             .on("end", function(event, d) {
                 delete dragging[d];
                 activeDimensions = [...dimensions]; // save new order
                 d3.select(this).transition().duration(500).attr("transform", "translate(" + x(d) + ")");
-                svg.selectAll(".line-dashed").transition().duration(500).attr("d", backgroundPath);
-                svg.selectAll(".line-solid").transition().duration(500).attr("d", foregroundPath);
+                svg.selectAll(".line-group .line-dashed").transition().duration(500).attr("d", backgroundPath);
+                svg.selectAll(".line-group .line-solid").transition().duration(500).attr("d", foregroundPath);
             })
         )
         .each(function(dim) {
