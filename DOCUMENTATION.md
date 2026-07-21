@@ -128,17 +128,37 @@ At this stage, the following core views were proposed:
 - Multiple Coordinated Views (discussed, evaluated)
 
 Prototype:
-- First test Application with a simple Parallel-Coordinate-Plot, Scatterplot and Spiderplot:
-- Small sample from the NASA Exoplanet Archive
+- First Application prototype with a simple Parallel-Coordinate-Plot:
+- Small sample of the NASA Exoplanet Archive
+
   ![img.png](img.png)
 
 **Key open questions at Week 6:**
 - What to do with incomplete/missing data rows?
 - Who is the target audience? Researchers or students?
 - Should a Scatterplot Matrix be added?
+- Should a Spiderplot be added?
 - Should Principal Component Analysis (PCA) be added as a dimension-reduction toggle?
+- What is the design language going to be?
 
-### 3.2 Feedback Round 1 — 2026-06-10
+### 3.2 Early Implementation Milestones
+
+| Date       | Development stage                   | Implemented functionality |
+|------------|-------------------------------------|---|
+| 2026-05-30 | Initial prototype (PCP)             | A first Parallel Coordinate Plot was implemented in a single HTML file using D3.js. It displayed five dimensions from a small NASA Exoplanet Archive dataset. |
+| 2026-05-31 | Application structure               | The project was divided into a landing page, visualization pages, shared styling and a data directory. Placeholder pages for the Scatterplot and Spiderplot were introduced. The structure was subsequently adapted for deployment through GitHub Pages. |
+| 2026-05-31 | Automatic axis scaling              | The Parallel Coordinate Plot received automatic scale selection. Dimensions spanning more than two orders of magnitude were displayed using logarithmic scales; other dimensions used linear scales. |
+| 2026-05-31 | Configurable PCP axes               | Users could add or remove dimensions through dynamically generated checkboxes. The visualization was redrawn whenever the selection changed. |
+| 2026-06-04 | PCP reference units and refactoring | Users could switch planetary mass and radius between Earth-based and Jupiter-based units. The visualization logic and styling were moved from the HTML file into separate JavaScript and CSS files. A glossary generated from `column_explanation.csv` was added. |
+| 2026-06-04 | Multi-axis brushing                 | Vertical D3 brushes were added to every PCP axis. Multiple brush ranges could be combined to filter planets across several dimensions. |
+| 2026-06-04 | First Scatterplot                   | A standalone Scatterplot Explorer was introduced. It supported selectable and swappable X/Y dimensions, automatic linear or logarithmic scaling, discovery-year coloring, hover tooltips and a data glossary. |
+| 2026-06-04 | First Spiderplot                    | The first Spiderplot comparison view supported up to four planets and eight normalized metrics. It included planet search, initial example planets and a separate searchable gallery of individual spiderplots. |
+| 2026-06-05 | PCP interaction improvements        | Tooltips for axis labels were added using the column glossary. Lines became clickable, allowing users to highlight a planet and display an information card. |
+| 2026-06-07 | Unified visual design               | The landing page and Parallel Coordinate Plot received a shared visual language and more consistent page, control and chart styling. |
+
+These milestones formed the first functional version of the application.
+
+### 3.3 Feedback Round 1 — 2026-06-10
 
 *Source: [`feedback/20260610-Feedback.md`](feedback/20260610-Feedback.md)*
 
@@ -154,7 +174,7 @@ Prototype:
 | Spiderplot Gallery | Show axis labels/values; selectable dimensions; filter; clustering; selection/overlap comparison |
 | Multiple Coordinated Views | Evaluate whether to add                                                                          |
 
-### 3.3 Feedback Round 2 — 2026-06-24
+### 3.4 Feedback Round 2 — 2026-06-24
 
 *Source: [`feedback/20260624-Feedback.md`](feedback/20260624-Feedback.md)*
 
@@ -179,7 +199,7 @@ Prototype:
 | Scatterplot | Panning | Yes            |
 | Scatterplot | More color options | Yes            |
 
-### 3.4 Expert Feedback — 2026-06-31 (Laura von Zadow)
+### 3.5 Expert Feedback — 2026-06-31 (Laura von Zadow)
 
 *Source: [`feedback/20260631-Feedback-Experte.md`](feedback/20260631-Feedback-Experte.md)*
 
@@ -206,7 +226,7 @@ Prototype:
 | Gravity Drop   | Add it | Yes          |
 | Transit        | Stable Y-axis; show how drop changes | Yes          |
 
-### 3.5 Feedback Round 3 — 2026-07-01
+### 3.6 Feedback Round 3 — 2026-07-01
 
 *Source: [`feedback/20260701-Feedback.md`](feedback/20260701-Feedback.md)*
 
@@ -221,6 +241,11 @@ Prototype:
 | Spiderplot | Re-add example planets                                         | Yes |
 | Spiderplot | Axes start fixed at 0                                          | Yes |
 | Spiderplot | Avoid mixing log/linear scales                                 | Yes |
+
+### 3.7 Feedback Implementation
+
+Based on several feedback rounds with users and experts, the application was further refined extensively. 
+The collected comments and requirements were carefully evaluated and incorporated into the final implementation.
 
 ---
 
