@@ -6,8 +6,11 @@
 
 ## 1. Project Overview
 
-This project is an interactive web-based visualization tool for exploring the [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) dataset. The application enables users — primarily **public audiences and students** (confirmed by expert: "public outreach") — to explore thousands of exoplanets through multiple coordinated and standalone views built with **D3.js**.
+This project is an interactive web-based visualization tool for exploring the [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/) dataset.
+The application enables the users to explore thousands of exoplanets through multiple coordinated and standalone views built with **D3.js**.
+The target user groups for this visualization are public audiences and students. 
 
+(TODO: labs nur kurz erwähnen. lassen wir planet selector)
 The tool is structured around three functional modules:
 
 | Module | Views |
@@ -24,64 +27,73 @@ The tool is structured around three functional modules:
 
 ```
 InfoVis-Exoplanets/
-├── index.html                  # Landing page / navigation hub
-├── pages/
-│   ├── parallel-coordinate-plot.html
-│   ├── scatterplot.html
-│   ├── spiderplot.html
-│   ├── spiderplot-gallery.html
-│   ├── habitable-zone.html
-│   ├── gravity-drop.html
-│   ├── transit-lab.html
-│   └── planet-selector.html
+├── index.html                  # Landing page
+├── pages/                      # HTML pages 
 ├── scripts/                    # D3.js visualization logic (JS)
-├── styling/                    # Per-view CSS + shared base
+├── styling/                    # CSS per page + shared base
 └── data/                       # NASA CSV exports + Python processing scripts
 ```
 
 ### 2.2 Technology Stack
 
-- **Frontend:** HTML5, Vanilla CSS, JavaScript (ES6+)
+- **Frontend:** HTML5, CSS, JavaScript
 - **Visualization:** [D3.js v7](https://d3js.org/)
 - **Data Source:** NASA Exoplanet Archive (public API + CSV export)
-- **Data Processing:** Python scripts (`fetch_api_data.py`, `merge_datasets.py`)
+- **Data Processing:** Python
 
-### 2.3 Views — Final State
+### 2.3 Main Views
 
 #### Parallel Coordinate Plot (`parallel-coordinate-plot.html`)
-- Displays multiple numeric dimensions as parallel vertical axes
-- Users can select which dimensions to show/hide via a control panel
-- **Brushing & filtering** per axis to narrow down planets
-- Earth ↔ Jupiter unit toggle for mass and radius
-- **Scale mode** selector (Auto / Linear / Log), with per-axis LOG/LIN labels
-- **Color-by** selection with LCh equal-lightness color palettes (addressing contrast feedback)
-- Hover highlights a single line; click locks a planet and shows an **infocard**
+Displays multiple numeric dimensions as parallel vertical axes. 
+Users are able to see trends or spot outliers for every two dimensions.
+
+**Key functionality:**
+- **Axis Selection:** Users can select which dimensions to show/hide via a control panel
+- **Brushing:** Filtering method for each axis to narrow down the results; Lines outside the filter range are greyed out
+- **Toggle reference planet:** Earth ↔ Jupiter unit toggle for mass and radius
+- **Axis Scaling:** Axis are scaled based on user preference (Auto / Linear / Log), with per-axis LOG/LIN labels
+- **Coloring** LCh equal-lightness color palettes
+- **Hovering:** Highlights a single line; click selects the planet and shows an infocard
+- **Missing Data:** Displayed in the chart with dashed lines; serves as line continuity 
+
+**Quality of life:**
 - Fullscreen chart toggle
-- Reset All Filters button
-- Column Glossary table at the bottom
+- Reset buttons for all filters or per axis
+- Glossary table with column names and explanations
 
 #### Scatterplot (`scatterplot.html`)
-- Two freely selectable numeric axes from the NASA export
-- **Pan & Box Zoom** interaction modes with Reset Zoom button
-- **Color-by** selector (Discovery Year, Number of Stars, Planet Count, Mass, Temperature, Discovery Method)
-- **Solar System overlay** toggle — adds our solar system's planets as reference points
-- **Discovery Year slider** with Play animation (planets appear chronologically 1992–2026)
-- Planet **infocard** on click (with link to exoplanet archive)
+Allows the comparison of 3 dimensions (including coloring). 
+Users are able to see clusters or emerging patterns.
+
+**Key functionality:**
+- **Axis selection:** Users are able to select, change and flip axes 
+- **Pan & Zoom** Panning and zooming interaction modes 
+- **Overview & Detail:** Zoom + Overview window; The user is able to zoom into the scatterplot without losing orientation
+- **Coloring:** Users are able to select different coloring options
+- **Solar System overlay:** Adds all planets from the earth's solar system as reference points
+- **Discovery Year slider** with Play animation (planets appear chronologically starting at 1992 up to 2026)
+
+**Quality of life:**
+- Reset Zoom button
+- Planet infocard on click (with link to exoplanet archive)
 - Data fields & definitions table at the bottom
 
 #### Spiderplot (`spiderplot.html`)
-- Radar/spider chart for comparing normalized exoplanet metrics
-- Search for planets by name, with live dropdown preview
-- Add up to N planets for side-by-side radial comparison
-- Configurable dimensions (add/remove axes)
-- Hover tooltip showing axis values with units
-- Visibility toggle (eye icon) per planet in the legend
-- Missing data: "No Data" placeholder per axis
+Allows the comparison of 4 planets for up to 8 dimensions in a radial view.
+Users are able to compare planets from the same planet system 
+
+**Key functionality:**
+- **Axis selection:** Users are able to add or remove axis for better comparison
+- **Search:** Searching for planets by name, with live dropdown preview; can be limited to planets from 
+- **Hover:** Hovering over one axis shows values with units
+- **Visibility toggle:** per planet in the legend
+- **Missing data:** "No Data" placeholder per axis (dashed lines) 
 
 #### Spiderplot Gallery (`spiderplot-gallery.html`)
-- Grid view of individual mini spiderplots
-- Browseable overview to identify planet shape patterns
-- [TODO: describe filtering/sorting state]
+Grid view of individual spiderplots providing an overview of all planets.
+Sorting is based on the planet system as mentioned in the expert feedback.
+
+### 2.4 Additional views
 
 #### Habitable Zone Explorer (`habitable-zone.html`)
 - Visualizes habitable zone boundaries based on stellar properties
@@ -95,7 +107,7 @@ InfoVis-Exoplanets/
 
 #### Transit Light Curve Lab (`transit-lab.html`)
 - Simulates the photometric dip as a planet transits its host star
-- Y-axis is stable; multiple transit profiles are overlaid for comparison
+- Y-axis is fixed; multiple transit profiles are overlaid for comparison
 - Educational explanation of the transit detection method
 
 #### Planet Selector (`planet-selector.html`)
@@ -116,143 +128,141 @@ At this stage, the following core views were proposed:
 - Multiple Coordinated Views (discussed, evaluated)
 
 Prototype:
-- First test Application with a simple Parallel-Coordinate-Plot
-- Imbed NASA exoplanet Dataset
+- First test Application with a simple Parallel-Coordinate-Plot, Scatterplot and Spiderplot:
+- Small sample from the NASA Exoplanet Archive
   ![img.png](img.png)
-
-Afterwards implementing Scatterplot and Spiderplot:
-- Building of the 3 main plots
-- Filtering of Dataset
 
 **Key open questions at Week 6:**
 - What to do with incomplete/missing data rows?
-- Who is the target audience — researchers or students?
-- Should a Scatterplot Matrix (SPLOM) be added?
-- Should PCA be added as a dimension-reduction toggle?
+- Who is the target audience? Researchers or students?
+- Should a Scatterplot Matrix be added?
+- Should Principal Component Analysis (PCA) be added as a dimension-reduction toggle?
 
 ### 3.2 Feedback Round 1 — 2026-06-10
 
 *Source: [`feedback/20260610-Feedback.md`](feedback/20260610-Feedback.md)*
 
-| Topic | Feedback |
-|---|---|
-| General | "Insights fehlen" — the app needs clearer takeaways |
-| General | Expert consultation required ("must do") |
-| General | Incomplete data: show dashed lines for partial entries; show completeness % per column |
-| PCP | Fullscreen toggle for the chart |
-| PCP | PCA toggle option |
-| Scatterplot Matrix | Add it; click to focus |
-| Spiderplot | Better handling of 0 values; selectable dimensions |
-| Spiderplot Gallery | Show axis labels/values; make axes selectable; filter; clustering; selection/overlap compare |
-| Multiple Coordinated Views | Evaluate whether to add |
+| Topic | Feedback                                                                                         |
+|---|--------------------------------------------------------------------------------------------------|
+| General | "Missing insights": The app needs clearer takeaways                                              |
+| General | Expert consultation required                                                                     |
+| General | Incomplete data: show dashed lines for partial entries                                           |
+| PCP | Fullscreen toggle for the chart                                                                  |
+| PCP | PCA toggle option                                                                                |
+| Scatterplot Matrix | Add it; click to focus                                                                           |
+| Spiderplot | Better handling of NULL values; selectable dimensions                                            |
+| Spiderplot Gallery | Show axis labels/values; selectable dimensions; filter; clustering; selection/overlap comparison |
+| Multiple Coordinated Views | Evaluate whether to add                                                                          |
 
 ### 3.3 Feedback Round 2 — 2026-06-24
 
 *Source: [`feedback/20260624-Feedback.md`](feedback/20260624-Feedback.md)*
 
-**App purpose clarification:** *Exploratory* use needs more onboarding (tutorial, preview slideshow).
+**App purpose clarification:** Should the app focus on exploratory or expert work?
+
+**User Study:** More intuitive operation for each plot; better visibility of toggles and selections.  
 
 | Topic | Feedback | Implemented? |
-|---|---|---|
-| General | Add tutorial / help button | ✅ |
-| PCP | Movable axes | ✅ |
-| PCP | Make Earth/Jupiter toggle more visible | ✅ |
-| PCP | Larger brush hit area + Reset brushing | ✅ |
-| PCP | Tooltip for dimension names | ✅ |
-| PCP | Fullscreen toggle | ✅ |
-| Spiderplot | Live search preview in dropdown | ✅ |
-| Spiderplot | Add planet directly on select | ✅ |
-| Spiderplot | Hover tooltip with values | ✅ |
-| Spiderplot | Eye-icon hide/show per planet | ✅ |
-| Spiderplot | "No Data" per quadrant | ✅ |
-| Scatterplot | Zoom into plot | ✅ |
-| Scatterplot | Panning | ✅ |
-| Scatterplot | More color options | ✅ |
+|---|---|--------------|
+| General | Add tutorial / help button | Yes            |
+| PCP | Movable axes | Yes            |
+| PCP | Make Earth/Jupiter toggle more visible | Yes            |
+| PCP | Larger brush hit area + Reset brushing | Yes            |
+| PCP | Tooltip for dimension names | Yes            |
+| PCP | Fullscreen toggle | Yes            |
+| Spiderplot | Live search preview in dropdown | Yes            |
+| Spiderplot | Add planet directly on select | Yes            |
+| Spiderplot | Hover tooltip with values | Yes            |
+| Spiderplot | Eye-icon hide/show per planet | Yes            |
+| Spiderplot | "No Data" per quadrant | Yes            |
+| Scatterplot | Zoom into plot | Yes            |
+| Scatterplot | Panning | Yes            |
+| Scatterplot | More color options | Yes            |
 
 ### 3.4 Expert Feedback — 2026-06-31 (Laura von Zadow)
 
 *Source: [`feedback/20260631-Feedback-Experte.md`](feedback/20260631-Feedback-Experte.md)*
 
-**Key expert insight:** Target audience is **public outreach** (students/enthusiasts), not researchers.
+**Key expert insight:** Target audience is public outreach (students/enthusiasts), not researchers.
 
-| Topic | Expert Feedback | Implemented? |
-|---|---|--|
-| General | Link planets to NASA exoplanet archive | ✅ |
-| General | "Multi-planet systems" visualization (system lines) | ✅ |
-| Spiderplot | Show units on axis labels, not just on hover | ✅ |
-| Spiderplot | Disclaimer for missing data (with fallback to secondary dataset) | ✅ |
-| Spiderplot | Dimensions add/remove | ✅ |
-| Spiderplot | Preload 2–4 demo planets | ✅ |
-| Scatter | Solar System planets as reference points | ✅ |
-| Scatter | Default: Orbital Period (days) vs. Jupiter Radius | ✅ |
-| Scatter | Discovery Year animation/timeline | ✅ |
-| Scatter | Filter/color by Discovery Method | ✅ |
-| Scatter | Click → planet infocard + link | ✅ |
-| Scatter | Performance improvements | ✅ |
-| PCP | LCh color space for equal-lightness palettes | ✅ |
-| PCP | Log/Linear labels per axis | ✅ |
-| PCP | Interesting default dataset | ✅ |
-| Habitable Zone | Only show systems with multiple planets (orbit period ≥ 10 days) | ✅ |
-| Gravity Drop | Add it | ✅ |
-| Transit | Stable Y-axis; show how drop changes | ✅ |
+| Topic          | Expert Feedback | Implemented? |
+|----------------|---|--------------|
+| General        | Link planets to NASA exoplanet archive | Yes          |
+| General        | "Multi-planet systems" visualization (system lines) | No            |
+| Spiderplot     | Show units on axis labels, not just on hover | Yes          |
+| Spiderplot     | Disclaimer for missing data (with fallback to secondary dataset) | Yes          |
+| Spiderplot     | Dimensions add/remove | Yes          |
+| Spiderplot     | Preload 2–4 demo planets | Yes          |
+| Scatterplot    | Solar System planets as reference points | Yes          |
+| Scatterplot        | Default: Orbital Period (days) vs. Jupiter Radius | Yes          |
+| Scatterplot        | Discovery Year animation/timeline | Yes          |
+| Scatterplot        | Filter/color by Discovery Method | Yes          |
+| Scatterplot        | Click → planet infocard + link | Yes          |
+| Scatterplot        | Performance improvements | Yes          |
+| PCP            | LCh color space for equal-lightness palettes | Yes          |
+| PCP            | Log/Linear labels per axis | Yes          |
+| PCP            | Interesting default dataset | Yes          |
+| Habitable Zone | Only show systems with multiple planets (orbit period ≥ 10 days) | Yes          |
+| Gravity Drop   | Add it | Yes          |
+| Transit        | Stable Y-axis; show how drop changes | Yes          |
 
 ### 3.5 Feedback Round 3 — 2026-07-01
 
 *Source: [`feedback/20260701-Feedback.md`](feedback/20260701-Feedback.md)*
 
-| Topic | Feedback | Implemented? |
-|---|---|--|
-| General | Check all axis labels | ✅ |
-| General | Add Solar System planets for context | ✅ |
-| PCP | Hover → highlight one line, fade others | ✅ |
-| PCP | Poor planet visibility when all lines are plotted | ✅ |
-| PCP | LCh color space | ✅ |
-| PCP | Log/Linear labels + toggle + explain why log | ✅ |
-| Spiderplot | Re-add example planets | ✅ |
-| Spiderplot | Axes start at 0 | ✅ |
-| Spiderplot | Avoid mixing log/linear scales | ✅ |
-| Habitable Zone | Selection by system, not individual planet | ✅ |
-| System Comparison | Implement Laura's idea (system lines with multiple attributes) | ✅ |
+| Topic | Feedback                                                       | Implemented? |
+|---|----------------------------------------------------------------|--|
+| General | Check all axis labels                                          | Yes |
+| General | Add Solar System planets for context                           | Yes |
+| PCP | Hover → better highlighting for one line, fade others          | Yes |
+| PCP | Poor planet visibility when all lines are plotted              | Yes |
+| PCP | LCh color space                                                | Yes |
+| PCP | Log/Linear labels + toggle                                     | Yes |
+| Spiderplot | Re-add example planets                                         | Yes |
+| Spiderplot | Axes start fixed at 0                                          | Yes |
+| Spiderplot | Avoid mixing log/linear scales                                 | Yes |
 
 ---
 
 ## 4. Design Rationale & Alternatives
 
-### 4.1 Why a Parallel Coordinate Plot?
-The NASA dataset has 30+ numeric columns. PCP lets users see patterns across all dimensions simultaneously and filter interactively via brushing — something impossible in a standard table.
+### 4.1 Parallel Coordinate Plot
+The NASA dataset has 30+ numeric columns.
+PCP lets users see patterns across all dimensions simultaneously and filter interactively via brushing. 
+Hard to achieve in a standard table.
 
-**Alternative considered:** Scatterplot Matrix (SPLOM). Discussed in Week 6 but not implemented due to complexity and layout constraints. The PCP serves the same multi-dimensional purpose more compactly.
+**Alternative considered:** Scatterplot Matrix. Discussed in Week 6 but not implemented due to complexity and layout constraints. The PCP serves the same multi-dimensional purpose more compactly.
 
-### 4.2 Why a Spiderplot?
-Ideal for comparing a small number of planets across normalized metrics at a glance. Complements the PCP by focusing on individual planet profiles rather than trends.
+### 4.2 Spiderplot
+Ideal for comparing a small number of planets across normalized metrics at a glance.
+Complements the PCP by focusing on individual planet profiles rather than trends.
 
 **Alternative considered:** Bar chart comparison panel. Rejected — less visually expressive and harder to compare across many attributes simultaneously.
 
-### 4.3 Why LCh Color Space for the PCP?
-Standard HSL palettes produce colors of varying perceived brightness (purple appears much darker than yellow at the same lightness value). LCh (Lightness-Chroma-Hue) keeps all hues perceptually equal-brightness, making every line visible regardless of value. This was directly recommended by the expert and confirmed in the 2026-07-01 feedback.
+### 4.3 LCh Color Space for the PCP
+Standard HSL palettes produce colors of varying perceived brightness (purple appears much darker than yellow at the same lightness value).
+LCh (Lightness-Chroma-Hue) keeps all hues perceptually equal-brightness, making every line visible regardless of value.
+This was directly recommended by the expert and confirmed in the 2026-07-01 feedback.
 
-### 4.4 Why a Scatterplot with Pan + Box Zoom?
-The dataset can have extreme outliers. A single zoom mode forces a tradeoff. Two modes (Pan and Box Zoom) let users navigate freely and also zoom precisely into dense clusters without losing context.
-
-### 4.5 Interactive Labs (Habitable Zone, Gravity Drop, Transit)
-These were added to lower the barrier for non-expert users. They make abstract astrophysical concepts tangible. Expert feedback confirmed this direction: "Drop simulator can be a cool demo."
-
-### 4.6 Planet Selector as Separate Utility
-Separating dataset curation from visualization keeps each view clean. Users can build a focused subset of planets and then explore it across all views consistently.
+### 4.4 Scatterplot
+The dataset can have extreme outliers.
+A single zoom mode forces a tradeoff. ????
+Two modes (Pan and Box Zoom) let users navigate freely and also zoom precisely into dense clusters without losing context.
 
 ---
 
 ## 5. Who Did What
 
-> **[TODO: Fill in team member contributions]**
+Decisions were made collectively by the team.
+Each view head was responsible for the oversight of the development and changes made by him or the team.
+The development process was executed through the utilization of pair or team programming methodologies.
+Every member of the team contributed equally to the success of the project.
 
-| Member | Contributions |
-|---|---|
-| [Name 1] | [e.g., Parallel Coordinate Plot, data processing scripts] |
-| [Name 2] | [e.g., Scatterplot, CSS design system] |
-| [Name 3] | [e.g., Spiderplot, Spiderplot Gallery, Planet Selector] |
-| [Name 4] | [e.g., Habitable Zone Explorer, Gravity Drop, Transit Lab] |
-| All | Expert interview preparation, feedback sessions, overall UI design decisions |
+| Member           | Contributions                                                |
+|------------------|--------------------------------------------------------------|
+| Laurin Kerntke   | Head of Parallel Coordinate Plot View                        |
+| Jonathan Kechter | Head of Scatter Plot View, Planet selector, Interactive Labs |
+| Daniel Schweiger | Head of Spider Plot View                                     |
 
 ---
 
@@ -282,7 +292,3 @@ Separating dataset curation from visualization keeps each view clean. Users can 
 - [ ] Scatterplot: performance improvements for large datasets
 - [ ] "System comparison" visualization (Laura's idea: one line per system, planets on the line)
 - [ ] Axis label audit across all views
-
----
-
-*Last updated: 2026-07-19*
