@@ -117,8 +117,6 @@ body::before {
 }
 
 .control-panel {
-    position: sticky;
-    top: 18px;
     padding: 18px;
 }
 
