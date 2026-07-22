@@ -115,7 +115,7 @@ function loadData() {
         }));
     }
 
-    return fetch("../data/api_only_export.csv")
+    return fetch("../data/nasa_export_large_merged.csv")
         .then(response => {
             if (!response.ok) {
                 throw new Error("Could not load CSV file.");

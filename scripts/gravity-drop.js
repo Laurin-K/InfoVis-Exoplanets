@@ -18,7 +18,7 @@ const probeExo = document.getElementById("probe-exo");
 const timerEarth = document.getElementById("timer-earth");
 const timerExo = document.getElementById("timer-exo");
 
-d3.csv("../data/api_only_export.csv", (d) => {
+d3.csv("../data/nasa_export_large_merged.csv", (d) => {
   // Need mass and radius in Earth units
   const mass = +d.pl_bmasse;
   const rad = +d.pl_rade;

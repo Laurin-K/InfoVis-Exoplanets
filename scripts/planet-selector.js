@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSelectionCount();
 
     // Load data
-    d3.csv("../data/api_only_export.csv").then(data => {
+    d3.csv("../data/nasa_export_large_merged.csv").then(data => {
         allPlanets = data;
         filteredPlanets = [...allPlanets];
         renderList();
