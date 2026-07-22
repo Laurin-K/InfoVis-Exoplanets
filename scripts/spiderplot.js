@@ -492,7 +492,7 @@ function renderMetricList() {
                 <input type="checkbox" data-axis-toggle="${metric.key}" checked>
                 <span>
                     <strong>${metric.label}</strong>
-                    <span>${metric.key} &middot; ${metric.unit} &middot; ${state.scaleMode}</span>
+                    <span>${metric.key} &middot; ${metric.unit || '-'} &middot; ${state.scaleMode}</span>
                 </span>
             </label>
             <div class="axis-actions" aria-label="Move ${metric.label}">
@@ -505,20 +505,29 @@ function renderMetricList() {
 
     if (inactiveContainer) {
         inactiveContainer.innerHTML = inactiveMetrics.map(metric => `
-        <div class="metric-card axis-card" style="cursor:pointer; opacity: 0.85;" onclick="window.toggleSpiderMetric('${metric.key}')">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px;">
-                <span><strong>${metric.label}</strong> <span style="font-size: 0.8em; color: var(--muted);">${metric.unit}</span></span>
-                <span style="font-size: 1.4rem; line-height: 1; color: var(--accent);">+</span>
-            </div>
+        <div class="metric-card axis-card" style="opacity: 0.7;" data-metric-key="${metric.key}">
+            <label class="axis-toggle">
+                <input type="checkbox" data-axis-toggle="${metric.key}">
+                <span>
+                    <strong>${metric.label}</strong>
+                    <span>${metric.key} &middot; ${metric.unit || '-'} &middot; ${state.scaleMode}</span>
+                </span>
+            </label>
         </div>
         `).join("");
     }
 
-    activeContainer.querySelectorAll("input[data-axis-toggle]").forEach(input => {
-        input.addEventListener("change", () => {
-            window.toggleSpiderMetric(input.dataset.axisToggle);
+    const attachToggleListener = (container) => {
+        if (!container) return;
+        container.querySelectorAll("input[data-axis-toggle]").forEach(input => {
+            input.addEventListener("change", () => {
+                window.toggleSpiderMetric(input.dataset.axisToggle);
+            });
         });
-    });
+    };
+
+    attachToggleListener(activeContainer);
+    attachToggleListener(inactiveContainer);
 
     activeContainer.querySelectorAll("button[data-axis-move]").forEach(button => {
         button.addEventListener("click", () => {
