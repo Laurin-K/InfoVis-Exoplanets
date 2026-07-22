@@ -6,7 +6,60 @@ const metrics = [
     { key: "pl_eqt", label: "Planet Temp.", unit: "K", scale: "linear" },
     { key: "st_teff", label: "Star Temp.", unit: "K", scale: "linear" },
     { key: "st_rad", label: "Star Radius", unit: "Solar radii", scale: "log" },
-    { key: "sy_dist", label: "Distance", unit: "pc", scale: "log" }
+    { key: "sy_dist", label: "Distance", unit: "pc", scale: "log" },
+];
+
+const hiddenMetrics = [
+    { key: "pl_dens", label: "Planet Density", unit: "g/cm^3", scale: "log" },
+    { key: "pl_orbeccen", label: "Eccentricity", unit: "", scale: "linear" },
+    { key: "pl_insol", label: "Insolation Flux", unit: "Earth flux", scale: "log" },
+    { key: "pl_eqt", label: "Equilibrium Temperature", unit: "K", scale: "log" },
+    { key: "pl_orbincl", label: "Orbital Inclination", unit: "deg", scale: "linear" },
+    { key: "pl_orbtper", label: "Epoch of Periastron", unit: "days", scale: "linear" },
+    { key: "pl_orblper", label: "Argument of Periastron", unit: "deg", scale: "linear" },
+    { key: "pl_rvamp", label: "Radial Velocity Amplitude", unit: "m/s", scale: "log" },
+
+    { key: "st_mass", label: "Stellar Mass", unit: "Solar mass", scale: "log" },
+    { key: "st_lum", label: "Stellar Luminosity", unit: "Solar luminosity", scale: "log" },
+    { key: "st_logg", label: "Stellar Surface Gravity", unit: "log(cm/s^2)", scale: "linear" },
+    { key: "st_age", label: "Stellar Age", unit: "Gyr", scale: "log" },
+    { key: "st_dens", label: "Stellar Density", unit: "g/cm^3", scale: "log" },
+    { key: "st_vsin", label: "Stellar Rotational Velocity", unit: "km/s", scale: "log" },
+    { key: "st_rotp", label: "Stellar Rotation Period", unit: "days", scale: "log" },
+    { key: "st_radv", label: "Systemic Radial Velocity", unit: "km/s", scale: "linear" },
+
+    { key: "rastr", label: "Right Ascension (sexagesimal)", unit: "", scale: "linear" },
+    { key: "ra", label: "Right Ascension", unit: "deg", scale: "linear" },
+    { key: "decstr", label: "Declination (sexagesimal)", unit: "", scale: "linear" },
+    { key: "dec", label: "Declination", unit: "deg", scale: "linear" },
+    { key: "glat", label: "Galactic Latitude", unit: "deg", scale: "linear" },
+    { key: "glon", label: "Galactic Longitude", unit: "deg", scale: "linear" },
+    { key: "elat", label: "Ecliptic Latitude", unit: "deg", scale: "linear" },
+    { key: "elon", label: "Ecliptic Longitude", unit: "deg", scale: "linear" },
+
+    { key: "sy_pm", label: "Total Proper Motion", unit: "mas/yr", scale: "log" },
+    { key: "sy_pmra", label: "Proper Motion RA", unit: "mas/yr", scale: "linear" },
+    { key: "sy_pmdec", label: "Proper Motion Dec", unit: "mas/yr", scale: "linear" },
+    { key: "sy_plx", label: "Parallax", unit: "mas", scale: "log" },
+
+    { key: "sy_bmag", label: "B Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_vmag", label: "V Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_jmag", label: "J Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_hmag", label: "H Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_kmag", label: "K Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_umag", label: "u Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_gmag", label: "g Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_rmag", label: "r Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_imag", label: "i Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_zmag", label: "z Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_w1mag", label: "W1 Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_w2mag", label: "W2 Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_w3mag", label: "W3 Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_w4mag", label: "W4 Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_gaiamag", label: "Gaia Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_icmag", label: "I Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_tmag", label: "TESS Magnitude", unit: "mag", scale: "linear" },
+    { key: "sy_kepmag", label: "Kepler Magnitude", unit: "mag", scale: "linear" },
 ];
 
 const colors = ["#8fe3c7", "#f2c66d", "#83aaff", "#ff9cba"];
@@ -29,7 +82,7 @@ const state = {
     domains: new Map(),
     scaleMode: "log",
     metricOrder: metrics.map(metric => metric.key),
-    hiddenMetricKeys: new Set(),
+    hiddenMetricKeys: hiddenMetrics.map(metric => metric.key),
     modalPlanet: null,
     modalHiddenMetricKeys: new Set()
 };
@@ -115,7 +168,7 @@ function loadData() {
         }));
     }
 
-    return fetch("../data/nasa_export_large_merged.csv")
+    return fetch("../data/NASA-Export-All.csv")
         .then(response => {
             if (!response.ok) {
                 throw new Error("Could not load CSV file.");
