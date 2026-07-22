@@ -1,24 +1,99 @@
 column;name;description
+loc_rowid;Index;
+default_flag;Default Parameter Set;Boolean flag indicating whether given set of planet parameters has been selected as default (1=yes 0=no)
+soltype;Solution Type;Disposition of planet according to given planet parameter set
+pl_controv_flag;Controversial Flag;Flag indicating whether the confirmation status of a planet has been questioned in the published literature (1=yes 0=no)
 pl_name;Planet Name;Planet name most commonly used in the literature
 hostname;Host Name;Stellar name most commonly used in the literature
-default_flag;Default Parameter Set;Boolean flag indicating whether given set of planet parameters has been selected as default (1=yes, 0=no)
 sy_snum;Number of Stars;Number of gravitationally bound stars in the planetary system
 sy_pnum;Number of Planets;Number of confirmed planets in the planetary system
 sy_mnum;Number of Moons;Number of moons in the planetary system
-cb_flag;Circumbinary Flag;Flag indicating whether the planet orbits a binary system (1=yes, 0=no)
+cb_flag;Circumbinary Flag;Flag indicating whether the planet orbits a binary system (1=yes 0=no)
+discoverymethod;Discovery Method;Method by which the planet was first identified
 disc_year;Discovery Year;Year the planet was discovered
-pl_controv_flag;Controversial Flag;Flag indicating whether the confirmation status of a planet has been questioned in the published literature (1=yes, 0=no)
+disc_locale;Discovery Locale;Location of observation of planet discovery (Ground or Space)
+rv_flag;Detections by Radial Velocity Variations;Flag indicating if the planet host star exhibits radial velocity variations due to the planet (1=yes 0=no)
+pul_flag;Detected by Pulsar Timing Variations;Boolean flag indicating if the planet host star exhibits pulsar timing variations due to the planet (1=yes 0=no)
+ptv_flag;Detected by Pulsation Timing Variations;Boolean flag indicating if the planet host star exhibits pulsation timing variations due to the planet (1=yes 0=no)
+tran_flag;Detected by Transits;Flag indicating if the planet transits its host star (1=yes 0=no)
+ast_flag;Detected by Astrometric Variations;Flag indicating if the planet host star exhibits astrometric variations due to the planet (1=yes 0=no)
+obm_flag;Detected by Orbital Brightness Modulations;Flag indicating whether the planet exhibits orbital modulations on the phase curve (1=yes 0=no)
+micro_flag;Detected by Microlensing;Boolean flag indicating if the planetary system acted as a lens during an observed microlensing event (1=yes 0=no)
+etv_flag;Detected by Eclipse Timing Variations;Flag indicating whether a circumbinary planet induces eclipse timing variations (1=yes 0=no)
+ima_flag;Detected by Imaging;Flag indicating if the planet has been observed via imaging techniques (1=yes 0=no)
+dkin_flag;Detection by Disk Kinematics;Boolean flag indicating if the presence of the planet was inferred due to disk kinematics (1=yes 0=no)
+pl_refname;Planetary Parameter Reference;Reference of publication used for given planet parameter set
 pl_orbper;Orbital Period [days];Time the planet takes to make a complete orbit around the host star or system
-pl_orbsmax;Orbit Semi-Major Axis [au];The longest radius of an elliptic orbit, or, for exoplanets detected via gravitational microlensing or direct imaging, the projected separation in the plane of the sky
-pl_rade;Planet Radius [Earth Radius];Length of a line segment from the center of the planet to its surface, measured in units of radius of the Earth
-pl_radj;Planet Radius [Jupiter Radius];Length of a line segment from the center of the planet to its surface, measured in units of radius of Jupiter
-pl_bmasse;Planet Mass or Mass*sin(i) [Earth Mass];Best planet mass estimate available, in order of preference: Mass, M*sin(i)/sin(i), or M*sin(i), depending on availability, and measured in Earth masses
-pl_bmassj;Planet Mass or Mass*sin(i) [Jupiter Mass];Best planet mass estimate available, in order of preference: Mass, M*sin(i)/sin(i), or M*sin(i), depending on availability, and measured in Jupiter masses
-pl_bmassprov;Planet Mass or Mass*sin(i) Provenance;Provenance of the measurement of the best mass. Options are: Mass, M*sin(i)/sin(i), and M*sini
-pl_insol;Insolation Flux [Earth Flux];Insolation flux is another way to give the equilibrium temperature. It's given in units relative to those measured for the Earth from the Sun.
-pl_eqt;Equilibrium Temperature [K];The equilibrium temperature of the planet as modeled by a black body heated only by its host star, or for directly imaged planets, the effective temperature of the planet required to match the measured luminosity if the planet were a black body
-st_teff;Stellar Effective Temperature [K];Temperature of the star as modeled by a black body emitting the same total amount of electromagnetic radiation
-st_rad;Stellar Radius [Solar Radius];Length of a line segment from the center of the star to its surface, measured in units of radius of the Sun
-st_mass;Stellar Mass [Solar mass];Amount of matter contained in the star, measured in units of masses of the Sun
-st_logg;Stellar Surface Gravity [log10(cm/s**2)];Gravitational acceleration experienced at the stellar surface
-sy_dist;Distance [pc];Distance to the planetary system in units of parsecs
+pl_orbsmax;Orbit Semi-Major Axis [au];The longest radius of an elliptic orbit
+pl_rade;Planet Radius [Earth Radius];Length from center of planet to surface in Earth radii
+pl_radj;Planet Radius [Jupiter Radius];Length from center of planet to surface in Jupiter radii
+pl_masse;Planet Mass [Earth Mass];Amount of matter contained in the planet in Earth masses
+pl_massj;Planet Mass [Jupiter Mass];Amount of matter contained in the planet in Jupiter masses
+pl_bmasse;Planet Mass or Mass*sin(i) [Earth Mass];Best planet mass estimate available in Earth masses
+pl_bmassj;Planet Mass or Mass*sin(i) [Jupiter Mass];Best planet mass estimate available in Jupiter masses
+pl_bmassprov;Planet Mass Provenance;Provenance of the measurement of the best mass
+pl_dens;Planet Density [g/cm^3];Amount of mass per unit volume of the planet
+pl_orbeccen;Eccentricity;Amount by which the orbit deviates from a perfect circle
+pl_insol;Insolation Flux [Earth Flux];Insolation flux relative to Earth
+pl_eqt;Equilibrium Temperature [K];Equilibrium temperature of the planet
+pl_orbincl;Inclination [deg];Angle of orbital plane relative to line-of-sight
+pl_tranmid;Time of Conjunction (Transit Midpoint);Midpoint of transit event
+pl_tsystemref;Time Reference Frame;Time system basis for temporal and orbital parameters
+ttv_flag;Transit Timing Variations Flag;Flag indicating if orbit exhibits transit timing variations
+pl_imppar;Impact Parameter;Projected distance between star and planet centers
+pl_trandep;Transit Depth [%];Relative flux decrease during transit
+pl_trandur;Transit Duration [hrs];Time from start to end of transit
+pl_ratdor;Semi-Major Axis to Stellar Radius Ratio;Distance divided by stellar radius
+pl_ratror;Planet to Stellar Radius Ratio;Planet radius divided by stellar radius
+pl_occdep;Occultation Depth [%];Depth of secondary eclipse
+pl_orbtper;Epoch of Periastron;Time of closest approach
+pl_orblper;Argument of Periastron;Angular separation between node and periastron
+pl_rvamp;Radial Velocity Amplitude;Half peak-to-peak radial velocity variation
+pl_projobliq;Projected Obliquity;Angle between stellar rotation and orbital axis (projected)
+pl_trueobliq;True Obliquity;Angle between stellar rotation and orbital axis
+st_refname;Stellar Parameter Reference;Reference of publication for stellar parameters
+st_spectype;Spectral Type;Classification based on spectral characteristics
+st_teff;Stellar Effective Temperature [K];Temperature of the star
+st_rad;Stellar Radius [Solar Radius];Radius of the star in solar units
+st_mass;Stellar Mass [Solar mass];Mass of the star in solar units
+st_met;Stellar Metallicity [dex];Metal content relative to hydrogen
+st_metratio;Stellar Metallicity Ratio;Ratio for metallicity value
+st_lum;Stellar Luminosity;Energy output per unit time
+st_logg;Stellar Surface Gravity;Gravitational acceleration at surface
+st_age;Stellar Age [Gyr];Age of the star
+st_dens;Stellar Density;Mass per unit volume of star
+st_vsin;Stellar Rotational Velocity;Rotational velocity times sin(i)
+st_rotp;Stellar Rotation Period;Time for one rotation
+st_radv;Systemic Radial Velocity;Velocity along line-of-sight
+sy_refname;System Parameter Reference;Reference of publication for system parameters
+sy_pm;Total Proper Motion;Angular change in position over time
+sy_pmra;Proper Motion (RA);Angular change in right ascension
+sy_pmdec;Proper Motion (Dec);Angular change in declination
+sy_dist;Distance [pc];Distance to system in parsecs
+sy_plx;Parallax;Angular position shift due to Earth orbit
+rastr;RA [sexagesimal];Right ascension in sexagesimal format
+decstr;Dec [sexagesimal];Declination in sexagesimal format
+ra;RA [decimal];Right ascension in decimal degrees
+dec;Dec [decimal];Declination in decimal degrees
+glat;Galactic Latitude;Galactic latitude in degrees
+glon;Galactic Longitude;Galactic longitude in degrees
+elat;Ecliptic Latitude;Ecliptic latitude in degrees
+elon;Ecliptic Longitude;Ecliptic longitude in degrees
+sy_bmag;B Magnitude;Brightness in B band
+sy_vmag;V Magnitude;Brightness in V band
+sy_jmag;J Magnitude;Brightness in J band
+sy_hmag;H Magnitude;Brightness in H band
+sy_kmag;K Magnitude;Brightness in K band
+sy_umag;u Magnitude;Brightness in u band
+sy_gmag;g Magnitude;Brightness in g band
+sy_rmag;r Magnitude;Brightness in r band
+sy_imag;i Magnitude;Brightness in i band
+sy_zmag;z Magnitude;Brightness in z band
+sy_w1mag;W1 Magnitude;Brightness in W1 band
+sy_w2mag;W2 Magnitude;Brightness in W2 band
+sy_w3mag;W3 Magnitude;Brightness in W3 band
+sy_w4mag;W4 Magnitude;Brightness in W4 band
+sy_gaiamag;Gaia Magnitude;Brightness in Gaia band
+sy_icmag;I Magnitude;Brightness in I band
+sy_tmag;TESS Magnitude;Brightness in TESS band
+sy_kepmag;Kepler Magnitude;Brightness in Kepler band
