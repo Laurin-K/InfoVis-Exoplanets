@@ -55,23 +55,10 @@
                     </select>
                     <p class="note">Compare uses one shared scale mode for every axis.</p>
                 </div>
-                
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                    <h2 style="margin: 0; font-size: 1.1rem;">Axis Controls</h2>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--muted);">
-                        Axis Values
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="toggle-axis-values">
-                            <span class="toggle-slider"></span>
-                        </div>
-                    </label>
-                </div>
-                <p class="note axis-note">Toggle axes on or off. Drag metrics or use Up/Down to change their order around the spiderplot.</p>
-                <div id="metric-list" class="metric-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </aside>
 
-            <section class="panel chart-panel">
-                <div class="chart-container">
+            <section class="panel chart-panel" style="width: 100%; box-sizing: border-box;">
+                <div class="chart-container" style="width: 100%;">
                     <div class="chart-main">
                         <div id="spider-warning" class="warning-banner" style="display: none; background: rgba(243, 178, 109, 0.15); color: #f3b26d; border: 1px solid rgba(243, 178, 109, 0.3); padding: 12px; margin-bottom: 16px; border-radius: 8px; font-size: 0.9rem; line-height: 1.4;"></div>
                         <div id="spider-chart"></div>
@@ -102,6 +89,33 @@
                             Spans across metrics where data is missing.
                         </div>
                     </aside>
+                </div>
+            </section>
+
+            <section class="panel axis-management-panel" style="grid-column: 1 / -1; margin-top: 6px; padding: 24px; box-sizing: border-box;">
+                <div style="display: flex; gap: 32px; align-items: flex-start;">
+                    <div style="flex: 0 0 320px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                            <h2 style="margin: 0; font-size: 1.1rem;">Axis Controls</h2>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--muted);">
+                                Axis Values
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="toggle-axis-values">
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                        <p class="note axis-note">Toggle axes on or off. Drag metrics or use Up/Down to change their order around the spiderplot.</p>
+                        <div id="metric-list" class="metric-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                            <h2 style="margin: 0; font-size: 1.1rem;">Available Axes</h2>
+                        </div>
+                        <p class="note axis-note">Click an axis to add it to the active list on the left.</p>
+                        <div id="inactive-metric-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; max-height: 480px; overflow-y: auto; padding-right: 8px;"></div>
+                    </div>
                 </div>
             </section>
         </main>

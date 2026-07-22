@@ -1,22 +1,73 @@
 const d3 = window.d3;
 
-const scatterDimensions = [
+const defaultScatterDimensions = [
+  "pl_orbper",
+  "pl_orbsmax",
+  "pl_rade",
+  "pl_bmasse",
+  "pl_eqt",
+  "st_teff",
+  "st_rad",
+  "sy_dist",
+];
+
+const advancedScatterDimensions = [
   "sy_snum",
   "sy_pnum",
   "sy_mnum",
   "disc_year",
-  "pl_orbper",
-  "pl_orbsmax",
-  "pl_rade",
   "pl_radj",
-  "pl_bmasse",
   "pl_bmassj",
   "pl_insol",
-  "pl_eqt",
-  "st_teff",
-  "st_rad",
   "st_mass",
   "st_logg",
+  "pl_dens",
+  "pl_orbeccen",
+  "pl_orbincl",
+  "pl_orbtper",
+  "pl_orblper",
+  "pl_rvamp",
+  "st_lum",
+  "st_age",
+  "st_dens",
+  "st_vsin",
+  "st_rotp",
+  "st_radv",
+  "rastr",
+  "ra",
+  "decstr",
+  "dec",
+  "glat",
+  "glon",
+  "elat",
+  "elon",
+  "sy_pm",
+  "sy_pmra",
+  "sy_pmdec",
+  "sy_plx",
+  "sy_bmag",
+  "sy_vmag",
+  "sy_jmag",
+  "sy_hmag",
+  "sy_kmag",
+  "sy_umag",
+  "sy_gmag",
+  "sy_rmag",
+  "sy_imag",
+  "sy_zmag",
+  "sy_w1mag",
+  "sy_w2mag",
+  "sy_w3mag",
+  "sy_w4mag",
+  "sy_gaiamag",
+  "sy_icmag",
+  "sy_tmag",
+  "sy_kepmag",
+];
+
+const scatterDimensions = [
+  ...defaultScatterDimensions,
+  ...advancedScatterDimensions,
 ];
 
 const integerDimensions = new Set([
@@ -52,7 +103,7 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Venus",
@@ -73,17 +124,17 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Earth",
     hostname: "Sun",
     disc_year: 0,
     pl_orbper: 365.256,
-    pl_orbsmax: 1.0000,
-    pl_rade: 1.0000,
+    pl_orbsmax: 1.0,
+    pl_rade: 1.0,
     pl_radj: 0.0892,
-    pl_bmasse: 1.0000,
+    pl_bmasse: 1.0,
     pl_bmassj: 0.00315,
     pl_eqt: 254,
     st_teff: 5778,
@@ -94,15 +145,15 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Mars",
     hostname: "Sun",
     disc_year: 0,
-    pl_orbper: 686.980,
+    pl_orbper: 686.98,
     pl_orbsmax: 1.5237,
-    pl_rade: 0.5320,
+    pl_rade: 0.532,
     pl_radj: 0.0475,
     pl_bmasse: 0.107,
     pl_bmassj: 0.00034,
@@ -115,7 +166,7 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Jupiter",
@@ -124,9 +175,9 @@ const solarSystemPlanets = [
     pl_orbper: 4332.589,
     pl_orbsmax: 5.2028,
     pl_rade: 11.209,
-    pl_radj: 1.0000,
+    pl_radj: 1.0,
     pl_bmasse: 317.828,
-    pl_bmassj: 1.0000,
+    pl_bmassj: 1.0,
     pl_eqt: 110,
     st_teff: 5778,
     st_rad: 1.0,
@@ -136,14 +187,14 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Saturn",
     hostname: "Sun",
     disc_year: 0,
     pl_orbper: 10759.22,
-    pl_orbsmax: 9.5370,
+    pl_orbsmax: 9.537,
     pl_rade: 9.449,
     pl_radj: 0.843,
     pl_bmasse: 95.159,
@@ -157,7 +208,7 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Uranus",
@@ -178,7 +229,7 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
+    isSolarSystem: true,
   },
   {
     pl_name: "Neptune",
@@ -199,14 +250,15 @@ const solarSystemPlanets = [
     sy_pnum: 8,
     sy_snum: 1,
     discoverymethod: "Solar System",
-    isSolarSystem: true
-  }
+    isSolarSystem: true,
+  },
 ];
 
 const state = {
   xField: "pl_orbper",
-  yField: "pl_radj",
+  yField: "pl_rade",
   colorField: "disc_year",
+  showAdvancedMetrics: false,
   discoveryYearUpperBound: discoveryYearMax,
   data: [],
   glossaryRows: [],
@@ -258,7 +310,8 @@ function isValidNumber(value) {
 
 function parseDataRow(row) {
   scatterDimensions.forEach((field) => {
-    row[field] = row[field] === "" || row[field] === undefined ? null : +row[field];
+    row[field] =
+      row[field] === "" || row[field] === undefined ? null : +row[field];
   });
 
   // Calculate missing Jupiter/Earth values
@@ -376,7 +429,13 @@ function updateHeaderMetric(validCount, filteredCount, totalCount) {
         `);
 }
 
-function updatePlotNote(validCount, filteredCount, totalCount, xScaleType, yScaleType) {
+function updatePlotNote(
+  validCount,
+  filteredCount,
+  totalCount,
+  xScaleType,
+  yScaleType,
+) {
   const missingCount = filteredCount - validCount;
   const yearFilteredOutCount = totalCount - filteredCount;
   const notes = [];
@@ -409,14 +468,17 @@ function updateLegend(data = state.data) {
   legend.html("");
 
   const field = state.colorField;
-  const isCategorical = field === "sy_snum" || field === "sy_pnum" || field === "discoverymethod";
+  const isCategorical =
+    field === "sy_snum" || field === "sy_pnum" || field === "discoverymethod";
   const values = data
     .map((d) => d[field])
     .filter((value) => {
       if (field === "discoverymethod") {
         return value != null && value !== "";
       }
-      return logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value);
+      return logColorFields.has(field)
+        ? isValidNumber(value) && value > 0
+        : isValidNumber(value);
     });
   if (!values.length) {
     legend.html("<div class='legend-caption'>No color data</div>");
@@ -502,14 +564,17 @@ function updateLegend(data = state.data) {
 
 function createColorScale(data = state.data) {
   const field = state.colorField;
-  const isCategorical = field === "sy_snum" || field === "sy_pnum" || field === "discoverymethod";
+  const isCategorical =
+    field === "sy_snum" || field === "sy_pnum" || field === "discoverymethod";
   const values = data
     .map((d) => d[field])
     .filter((value) => {
       if (field === "discoverymethod") {
         return value != null && value !== "";
       }
-      return logColorFields.has(field) ? isValidNumber(value) && value > 0 : isValidNumber(value);
+      return logColorFields.has(field)
+        ? isValidNumber(value) && value > 0
+        : isValidNumber(value);
     });
   if (!values.length) return () => "#8ea0b8";
 
@@ -524,7 +589,8 @@ function createColorScale(data = state.data) {
       const scale = d3
         .scaleSequential(d3.interpolateViridis)
         .domain([Math.log10(minVal), Math.log10(maxVal)]);
-      return (val) => (isValidNumber(val) && val > 0 ? scale(Math.log10(val)) : "#8ea0b8");
+      return (val) =>
+        isValidNumber(val) && val > 0 ? scale(Math.log10(val)) : "#8ea0b8";
     }
 
     const scale = d3
@@ -652,11 +718,6 @@ function buildControls() {
   const controls = d3.select("#controls");
   controls.selectAll("*").remove();
 
-  const fields = scatterDimensions.map((field) => ({
-    value: field,
-    label: fieldLabel(field),
-  }));
-
   const xBlock = controls.append("div").attr("class", "control-block");
   xBlock.append("label").attr("for", "x-select").text("X axis");
   xBlock.append("select").attr("id", "x-select");
@@ -664,6 +725,25 @@ function buildControls() {
   const yBlock = controls.append("div").attr("class", "control-block");
   yBlock.append("label").attr("for", "y-select").text("Y axis");
   yBlock.append("select").attr("id", "y-select");
+
+  const advancedToggleBlock = controls
+    .append("div")
+    .attr("class", "control-block")
+    .style("flex-direction", "row")
+    .style("align-items", "center")
+    .style("gap", "8px")
+    .style("margin-top", "10px");
+  const advancedToggle = advancedToggleBlock
+    .append("input")
+    .attr("type", "checkbox")
+    .attr("id", "advanced-metrics-toggle");
+  advancedToggleBlock
+    .append("label")
+    .attr("for", "advanced-metrics-toggle")
+    .text("Show advanced metrics")
+    .style("margin", "0")
+    .style("font-size", "14px")
+    .style("cursor", "pointer");
 
   controls
     .append("button")
@@ -682,21 +762,47 @@ function buildControls() {
   const xSelect = d3.select("#x-select");
   const ySelect = d3.select("#y-select");
 
-  xSelect
-    .selectAll("option")
-    .data(fields)
-    .join("option")
-    .attr("value", (d) => d.value)
-    .text((d) => d.label);
+  function updateSelectOptions() {
+    const visibleDimensions = state.showAdvancedMetrics
+      ? scatterDimensions
+      : defaultScatterDimensions;
+    const fields = visibleDimensions.map((field) => ({
+      value: field,
+      label: fieldLabel(field),
+    }));
 
-  ySelect
-    .selectAll("option")
-    .data(fields)
-    .join("option")
-    .attr("value", (d) => d.value)
-    .text((d) => d.label);
+    if (!visibleDimensions.includes(state.xField)) {
+      state.xField = visibleDimensions[0];
+    }
+    if (!visibleDimensions.includes(state.yField)) {
+      state.yField = visibleDimensions[1] || visibleDimensions[0];
+    }
 
-  syncSelectValues();
+    xSelect
+      .selectAll("option")
+      .data(fields, (d) => d.value)
+      .join("option")
+      .attr("value", (d) => d.value)
+      .text((d) => d.label);
+
+    ySelect
+      .selectAll("option")
+      .data(fields, (d) => d.value)
+      .join("option")
+      .attr("value", (d) => d.value)
+      .text((d) => d.label);
+
+    syncSelectValues();
+  }
+
+  advancedToggle.property("checked", state.showAdvancedMetrics);
+  advancedToggle.on("change", function () {
+    state.showAdvancedMetrics = this.checked;
+    updateSelectOptions();
+    drawScatterplot();
+  });
+
+  updateSelectOptions();
 
   xSelect.on("change", function () {
     state.xField = this.value;
@@ -1053,12 +1159,11 @@ function drawScatterplot() {
     __plotId: `${d.pl_name || d.hostname || "planet"}-${index}`,
     __x: xScaleInfo.scale(d[state.xField]),
     __y: yScaleInfo.scale(d[state.yField]),
-    __color:
-      d.isSolarSystem
-        ? "#ffca28"
-        : (colorScale && isValidNumber(d[state.colorField])
-            ? colorScale(d[state.colorField])
-            : "#8ea0b8"),
+    __color: d.isSolarSystem
+      ? "#ffca28"
+      : colorScale && isValidNumber(d[state.colorField])
+        ? colorScale(d[state.colorField])
+        : "#8ea0b8",
   }));
 
   function visibleDataForTransform(transform) {
@@ -1084,7 +1189,14 @@ function drawScatterplot() {
     context.clearRect(0, 0, width, height);
 
     context.save();
-    drawRoundedRect(context, margin.left, margin.top, innerWidth, innerHeight, 16);
+    drawRoundedRect(
+      context,
+      margin.left,
+      margin.top,
+      innerWidth,
+      innerHeight,
+      16,
+    );
     context.fillStyle = "rgba(5, 11, 21, 0.55)";
     context.fill();
     context.clip();
@@ -1129,18 +1241,24 @@ function drawScatterplot() {
     // 3. Draw selection ring if a planet is selected
     if (state.selectedPlanet) {
       const d = state.selectedPlanet;
-      const isVisible = visibleData.some(p => p.pl_name === d.pl_name);
+      const isVisible = visibleData.some((p) => p.pl_name === d.pl_name);
       if (isVisible) {
         const x = margin.left + transform.applyX(d.__x);
         const y = margin.top + transform.applyY(d.__y);
         context.beginPath();
-        context.arc(x, y, (d.isSolarSystem ? pointRadius * 1.5 : pointRadius) + 4, 0, Math.PI * 2);
+        context.arc(
+          x,
+          y,
+          (d.isSolarSystem ? pointRadius * 1.5 : pointRadius) + 4,
+          0,
+          Math.PI * 2,
+        );
         context.strokeStyle = "#ffca28";
         context.lineWidth = 2.5;
         context.stroke();
       }
     }
-    
+
     context.restore();
   }
 
@@ -1432,7 +1550,7 @@ function loadCsvText(path, fallbackText, label) {
 }
 
 Promise.all([
-  loadCsvText("../data/nasa_export_large_merged.csv", fallbackDataCsv, "NASA export"),
+  loadCsvText("../data/NASA-Export-ALL.csv", fallbackDataCsv, "NASA export"),
   loadCsvText(
     "../data/column_explanation.csv",
     fallbackGlossaryCsv,
@@ -1442,14 +1560,14 @@ Promise.all([
   .then(([dataText, glossaryText]) => {
     let data = d3.csvParse(dataText, parseDataRow);
 
-    const saved = localStorage.getItem('selected_planets');
+    const saved = localStorage.getItem("selected_planets");
     if (saved) {
-        try {
-            const selectedSet = new Set(JSON.parse(saved));
-            if (selectedSet.size > 0) {
-                data = data.filter(d => selectedSet.has(d.pl_name));
-            }
-        } catch(e) {}
+      try {
+        const selectedSet = new Set(JSON.parse(saved));
+        if (selectedSet.size > 0) {
+          data = data.filter((d) => selectedSet.has(d.pl_name));
+        }
+      } catch (e) {}
     }
 
     state.data = data;
@@ -1533,10 +1651,10 @@ function updateInfocard(d) {
     { key: "st_teff", label: "Stellar Temp [K]" },
     { key: "st_rad", label: "Stellar Radius [Solar Radius]" },
     { key: "st_mass", label: "Stellar Mass [Solar Mass]" },
-    { key: "sy_dist", label: "Distance [pc]" }
+    { key: "sy_dist", label: "Distance [pc]" },
   ];
 
-  fieldsToShow.forEach(field => {
+  fieldsToShow.forEach((field) => {
     const val = d[field.key];
     if (val !== undefined && val !== null && val !== "") {
       const displayVal = typeof val === "number" ? val.toLocaleString() : val;

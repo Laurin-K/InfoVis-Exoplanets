@@ -62,6 +62,9 @@ const hiddenMetrics = [
     { key: "sy_kepmag", label: "Kepler Magnitude", unit: "mag", scale: "linear" },
 ];
 
+const allMetrics = [...metrics, ...hiddenMetrics];
+
+
 const colors = ["#8fe3c7", "#f2c66d", "#83aaff", "#ff9cba"];
 const maxSelection = 4;
 
@@ -81,15 +84,15 @@ const state = {
     selected: [],
     domains: new Map(),
     scaleMode: "log",
-    metricOrder: metrics.map(metric => metric.key),
-    hiddenMetricKeys: hiddenMetrics.map(metric => metric.key),
+    metricOrder: allMetrics.map(metric => metric.key),
+    hiddenMetricKeys: new Set(hiddenMetrics.map(metric => metric.key)),
     modalPlanet: null,
     modalHiddenMetricKeys: new Set()
 };
 
 function getMetricsByOrder() {
     return state.metricOrder
-        .map(key => metrics.find(metric => metric.key === key))
+        .map(key => allMetrics.find(metric => metric.key === key))
         .filter(Boolean);
 }
 
@@ -198,7 +201,7 @@ function preparePlanets(rows) {
                 disc_year: toNumber(row.disc_year)
             };
 
-            metrics.forEach(metric => {
+            allMetrics.forEach(metric => {
                 planet[metric.key] = toNumber(row[metric.key]);
             });
 
@@ -215,11 +218,11 @@ function preparePlanets(rows) {
             planet.knownMetricCount = countKnownMetrics(planet);
             return planet;
         })
-        .filter(planet => planet.pl_name && metrics.some(metric => planet[metric.key] != null));
+        .filter(planet => planet.pl_name && allMetrics.some(metric => planet[metric.key] != null));
 }
 
 function countKnownMetrics(planet) {
-    return metrics.filter(metric => planet[metric.key] != null && Number.isFinite(planet[metric.key])).length;
+    return allMetrics.filter(metric => planet[metric.key] != null && Number.isFinite(planet[metric.key])).length;
 }
 
 function isCompareEligible(planet) {
@@ -227,7 +230,7 @@ function isCompareEligible(planet) {
 }
 
 function calculateDomains(planets) {
-    metrics.forEach(metric => {
+    allMetrics.forEach(metric => {
         const values = planets
             .map(planet => planet[metric.key])
             .filter(value => value != null && Number.isFinite(value));
@@ -462,21 +465,31 @@ function createSpiderSvg(planets, options = {}) {
     `;
 }
 
+window.toggleSpiderMetric = function(key) {
+    if (state.hiddenMetricKeys.has(key)) {
+        state.hiddenMetricKeys.delete(key);
+    } else {
+        state.hiddenMetricKeys.add(key);
+    }
+    updateCompareView();
+};
+
 function renderMetricList() {
-    const container = document.querySelector("#metric-list");
-    if (!container) {
+    const activeContainer = document.querySelector("#metric-list");
+    const inactiveContainer = document.querySelector("#inactive-metric-list");
+    if (!activeContainer) {
         return;
     }
 
     const orderedMetrics = getMetricsByOrder();
 
-    container.innerHTML = orderedMetrics.map((metric, index) => {
-        const isHidden = state.hiddenMetricKeys.has(metric.key);
+    const activeMetrics = orderedMetrics.filter(m => !state.hiddenMetricKeys.has(m.key));
+    const inactiveMetrics = orderedMetrics.filter(m => state.hiddenMetricKeys.has(m.key));
 
-        return `
-        <div class="metric-card axis-card ${isHidden ? "is-hidden" : ""}" draggable="true" data-metric-key="${metric.key}">
+    activeContainer.innerHTML = activeMetrics.map((metric, index) => `
+        <div class="metric-card axis-card" draggable="true" data-metric-key="${metric.key}">
             <label class="axis-toggle">
-                <input type="checkbox" data-axis-toggle="${metric.key}" ${isHidden ? "" : "checked"}>
+                <input type="checkbox" data-axis-toggle="${metric.key}" checked>
                 <span>
                     <strong>${metric.label}</strong>
                     <span>${metric.key} &middot; ${metric.unit} &middot; ${state.scaleMode}</span>
@@ -484,33 +497,37 @@ function renderMetricList() {
             </label>
             <div class="axis-actions" aria-label="Move ${metric.label}">
                 <button type="button" data-axis-move="${metric.key}" data-direction="up" ${index === 0 ? "disabled" : ""} title="Move up">Up</button>
-                <button type="button" data-axis-move="${metric.key}" data-direction="down" ${index === orderedMetrics.length - 1 ? "disabled" : ""} title="Move down">Down</button>
+                <button type="button" data-axis-move="${metric.key}" data-direction="down" ${index === activeMetrics.length - 1 ? "disabled" : ""} title="Move down">Down</button>
                 <span class="drag-handle" title="Drag to reorder">Drag</span>
             </div>
         </div>
-    `;
-    }).join("");
+    `).join("");
 
-    container.querySelectorAll("input[data-axis-toggle]").forEach(input => {
+    if (inactiveContainer) {
+        inactiveContainer.innerHTML = inactiveMetrics.map(metric => `
+        <div class="metric-card axis-card" style="cursor:pointer; opacity: 0.85;" onclick="window.toggleSpiderMetric('${metric.key}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px;">
+                <span><strong>${metric.label}</strong> <span style="font-size: 0.8em; color: var(--muted);">${metric.unit}</span></span>
+                <span style="font-size: 1.4rem; line-height: 1; color: var(--accent);">+</span>
+            </div>
+        </div>
+        `).join("");
+    }
+
+    activeContainer.querySelectorAll("input[data-axis-toggle]").forEach(input => {
         input.addEventListener("change", () => {
-            if (input.checked) {
-                state.hiddenMetricKeys.delete(input.dataset.axisToggle);
-            } else {
-                state.hiddenMetricKeys.add(input.dataset.axisToggle);
-            }
-
-            updateCompareView();
+            window.toggleSpiderMetric(input.dataset.axisToggle);
         });
     });
 
-    container.querySelectorAll("button[data-axis-move]").forEach(button => {
+    activeContainer.querySelectorAll("button[data-axis-move]").forEach(button => {
         button.addEventListener("click", () => {
             moveMetric(button.dataset.axisMove, button.dataset.direction === "up" ? -1 : 1);
             updateCompareView();
         });
     });
 
-    container.querySelectorAll(".axis-card").forEach(card => {
+    activeContainer.querySelectorAll(".axis-card").forEach(card => {
         card.addEventListener("dragstart", event => {
             event.dataTransfer.setData("text/plain", card.dataset.metricKey);
             event.dataTransfer.effectAllowed = "move";
@@ -541,15 +558,20 @@ function renderMetricList() {
 }
 
 function moveMetric(metricKey, offset) {
-    const currentIndex = state.metricOrder.indexOf(metricKey);
+    const activeKeys = state.metricOrder.filter(k => !state.hiddenMetricKeys.has(k));
+    const currentIndex = activeKeys.indexOf(metricKey);
     const nextIndex = currentIndex + offset;
 
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= state.metricOrder.length) {
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= activeKeys.length) {
         return;
     }
 
-    const [metric] = state.metricOrder.splice(currentIndex, 1);
-    state.metricOrder.splice(nextIndex, 0, metric);
+    const targetKey = activeKeys[nextIndex];
+    const index1 = state.metricOrder.indexOf(metricKey);
+    const index2 = state.metricOrder.indexOf(targetKey);
+
+    state.metricOrder[index1] = targetKey;
+    state.metricOrder[index2] = metricKey;
 }
 
 function reorderMetric(draggedKey, targetKey) {
