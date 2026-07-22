@@ -54,7 +54,8 @@ def process_data():
         'star_teff': 'st_teff',
         'star_radius': 'st_rad',
         'star_mass': 'st_mass',
-        'star_distance': 'sy_dist'
+        'star_distance': 'sy_dist',
+        'log_g': 'st_logg'
     }
     
     df_mapped = df_api.rename(columns=column_mapping)
@@ -83,7 +84,7 @@ def process_data():
     
     cols_to_fill = [
         'pl_orbper', 'pl_orbsmax', 'pl_rade', 'pl_bmasse', 
-        'pl_eqt', 'st_teff', 'st_rad', 'st_mass', 'sy_dist'
+        'pl_eqt', 'st_teff', 'st_rad', 'st_mass', 'sy_dist', 'st_logg'
     ]
     
     def fill_nasa_dataset(nasa_path):

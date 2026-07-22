@@ -1,42 +1,74 @@
 let allDimensions = [
   "sy_snum",
   "sy_pnum",
+  "sy_mnum",
   "disc_year",
   "pl_orbper",
   "pl_orbsmax",
   "pl_rade",
   "pl_bmasse",
+  "pl_orbeccen",
+  "pl_insol",
+  "pl_eqt",
+  "pl_dens",
+  "pl_orbincl",
   "st_teff",
+  "st_rad",
+  "st_mass",
+  "st_met",
+  "st_logg",
+  "st_age",
+  "st_dens",
   "sy_dist",
+  "sy_vmag",
+  "sy_kmag",
+  "sy_gaiamag",
 ];
 const jupiterReferences = ["pl_bmassj", "pl_radj"];
 const earthReferences = ["pl_bmasse", "pl_rade"];
 let activeDimensions = [
-  "sy_snum",
+  "st_mass",
+  "st_teff",
   "sy_pnum",
-  "disc_year",
-  "pl_orbper",
   "pl_orbsmax",
+  "pl_bmasse",
+  "pl_eqt",
+  "pl_dens",
 ];
 const brushes = {};
 let scaleMode = "auto";
-let colorField = "disc_year";
+let colorField = "st_teff";
 let colorPalette = "lch-warm-cool";
 
 const colorFieldOptions = [
   "sy_snum",
   "sy_pnum",
+  "sy_mnum",
   "disc_year",
   "pl_orbper",
   "pl_orbsmax",
   "pl_rade",
   "pl_bmasse",
+  "pl_orbeccen",
+  "pl_insol",
+  "pl_eqt",
+  "pl_dens",
+  "pl_orbincl",
   "st_teff",
+  "st_rad",
+  "st_mass",
+  "st_met",
+  "st_logg",
+  "st_age",
+  "st_dens",
   "sy_dist",
+  "sy_vmag",
+  "sy_kmag",
+  "sy_gaiamag",
 ];
 
-const categoricalColorFields = new Set(["sy_snum", "sy_pnum"]);
-const integerCountFields = new Set(["sy_snum", "sy_pnum"]);
+const categoricalColorFields = new Set(["sy_snum", "sy_pnum", "sy_mnum"]);
+const integerCountFields = new Set(["sy_snum", "sy_pnum", "sy_mnum"]);
 
 function isIntegerCountField(field) {
   return integerCountFields.has(field);
@@ -339,7 +371,7 @@ let fullData = [];
 let columnExplanations = {};
 
 Promise.all([
-  d3.csv("../data/nasa_export_large_merged.csv", (d) => {
+  d3.csv("../data/nasa_export_full.csv", (d) => {
     // Convert all numeric strings into numbers so newly checked dimensions scale correctly
     Object.keys(d).forEach((key) => {
       if (d[key] === "" || d[key].trim() === "") {

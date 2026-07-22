@@ -79,7 +79,7 @@ const indicatorLine = svg
 const indicatorDot = svg.append("circle").attr("r", 5).style("fill", "white").attr("clip-path", "url(#clip)");
 
 // Load Data
-d3.csv("../data/nasa_export_large_merged.csv", (d) => {
+d3.csv("../data/nasa_export_full.csv", (d) => {
   // Need planet radius and star radius
   const prad = +d.pl_rade;
   const srad = +d.st_rad;

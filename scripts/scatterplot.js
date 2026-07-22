@@ -11,12 +11,22 @@ const scatterDimensions = [
   "pl_radj",
   "pl_bmasse",
   "pl_bmassj",
+  "pl_orbeccen",
   "pl_insol",
   "pl_eqt",
+  "pl_dens",
+  "pl_orbincl",
   "st_teff",
   "st_rad",
   "st_mass",
+  "st_met",
   "st_logg",
+  "st_age",
+  "st_dens",
+  "sy_dist",
+  "sy_vmag",
+  "sy_kmag",
+  "sy_gaiamag",
 ];
 
 const integerDimensions = new Set([
@@ -204,9 +214,9 @@ const solarSystemPlanets = [
 ];
 
 const state = {
-  xField: "pl_orbper",
-  yField: "pl_radj",
-  colorField: "disc_year",
+  xField: "pl_orbsmax",
+  yField: "pl_bmasse",
+  colorField: "pl_eqt",
   discoveryYearUpperBound: discoveryYearMax,
   data: [],
   glossaryRows: [],
@@ -1432,7 +1442,7 @@ function loadCsvText(path, fallbackText, label) {
 }
 
 Promise.all([
-  loadCsvText("../data/nasa_export_large_merged.csv", fallbackDataCsv, "NASA export"),
+  loadCsvText("../data/nasa_export_full.csv", fallbackDataCsv, "NASA export"),
   loadCsvText(
     "../data/column_explanation.csv",
     fallbackGlossaryCsv,

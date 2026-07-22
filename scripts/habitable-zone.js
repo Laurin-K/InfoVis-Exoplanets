@@ -51,7 +51,7 @@ const maxOrbitRadiusPx = Math.min(cx, cy) * 0.9;
 let scaleAu = d3.scaleLinear().range([0, maxOrbitRadiusPx]);
 
 // Load Data
-d3.csv("../data/nasa_export_large_merged.csv", (d) => {
+d3.csv("../data/nasa_export_full.csv", (d) => {
   // We need planets with valid st_teff, st_rad, and pl_orbsmax
   const st_teff = +d.st_teff;
   const st_rad = +d.st_rad;

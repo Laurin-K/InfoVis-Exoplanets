@@ -3,9 +3,24 @@ const metrics = [
     { key: "pl_orbsmax", label: "Orbit Size", unit: "au", scale: "log" },
     { key: "pl_rade", label: "Radius", unit: "Earth radii", scale: "log" },
     { key: "pl_bmasse", label: "Mass", unit: "Earth masses", scale: "log" },
+    { key: "pl_insol", label: "Insolation", unit: "Earth flux", scale: "log" },
     { key: "pl_eqt", label: "Planet Temp.", unit: "K", scale: "linear" },
+    { key: "pl_dens", label: "Planet Density", unit: "g/cm³", scale: "log" },
+    { key: "pl_orbincl", label: "Inclination", unit: "deg", scale: "linear" },
+    { key: "pl_orbeccen", label: "Eccentricity", unit: "", scale: "linear" },
     { key: "st_teff", label: "Star Temp.", unit: "K", scale: "linear" },
     { key: "st_rad", label: "Star Radius", unit: "Solar radii", scale: "log" },
+    { key: "st_mass", label: "Star Mass", unit: "Solar mass", scale: "log" },
+    { key: "st_dens", label: "Star Density", unit: "g/cm³", scale: "log" },
+    { key: "st_met", label: "Metallicity", unit: "dex", scale: "linear" },
+    { key: "st_logg", label: "Star Gravity", unit: "log10(cm/s²)", scale: "linear" },
+    { key: "st_age", label: "Star Age", unit: "Gyr", scale: "linear" },
+    { key: "sy_snum", label: "Number of Stars", unit: "", scale: "linear" },
+    { key: "sy_pnum", label: "Number of Planets", unit: "", scale: "linear" },
+    { key: "sy_mnum", label: "Number of Moons", unit: "", scale: "linear" },
+    { key: "sy_vmag", label: "V-band Mag", unit: "mag", scale: "linear" },
+    { key: "sy_kmag", label: "K-band Mag", unit: "mag", scale: "linear" },
+    { key: "sy_gaiamag", label: "Gaia Mag", unit: "mag", scale: "linear" },
     { key: "sy_dist", label: "Distance", unit: "pc", scale: "log" }
 ];
 
@@ -29,9 +44,9 @@ const state = {
     domains: new Map(),
     scaleMode: "log",
     metricOrder: metrics.map(metric => metric.key),
-    hiddenMetricKeys: new Set(),
+    hiddenMetricKeys: new Set(["pl_insol", "pl_dens", "pl_orbincl", "pl_orbeccen", "st_rad", "st_dens", "st_met", "st_logg", "st_age", "sy_snum", "sy_pnum", "sy_mnum", "sy_vmag", "sy_kmag", "sy_gaiamag", "sy_dist"]),
     modalPlanet: null,
-    modalHiddenMetricKeys: new Set()
+    modalHiddenMetricKeys: new Set(["pl_insol", "pl_dens", "pl_orbincl", "pl_orbeccen", "st_rad", "st_dens", "st_met", "st_logg", "st_age", "sy_snum", "sy_pnum", "sy_mnum", "sy_vmag", "sy_kmag", "sy_gaiamag", "sy_dist"])
 };
 
 function getMetricsByOrder() {
@@ -115,7 +130,7 @@ function loadData() {
         }));
     }
 
-    return fetch("../data/nasa_export_large_merged.csv")
+    return fetch("../data/nasa_export_full.csv")
         .then(response => {
             if (!response.ok) {
                 throw new Error("Could not load CSV file.");

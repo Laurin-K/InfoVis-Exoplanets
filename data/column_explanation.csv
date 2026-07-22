@@ -22,3 +22,13 @@ st_rad;Stellar Radius [Solar Radius];Length of a line segment from the center of
 st_mass;Stellar Mass [Solar mass];Amount of matter contained in the star, measured in units of masses of the Sun
 st_logg;Stellar Surface Gravity [log10(cm/s**2)];Gravitational acceleration experienced at the stellar surface
 sy_dist;Distance [pc];Distance to the planetary system in units of parsecs
+discoverymethod;Discovery Method;Method by which the planet was first identified
+pl_orbeccen;Eccentricity;Amount by which the orbit of the planet deviates from a perfect circle
+pl_dens;Planet Density [g/cm**3];Amount of mass per unit of volume of the planet
+pl_orbincl;Orbital Inclination [deg];Angular distance of the orbital plane from the line of sight
+st_met;Stellar Metallicity [dex];Measurement of the metal content of the photosphere of the star as compared to the hydrogen content
+st_age;Stellar Age [Gyr];Age of the host star
+st_dens;Stellar Density [g/cm**3];Amount of mass per unit of volume of the star
+sy_vmag;V-band Magnitude;Brightness of the host star as measured using the V (Visual) band
+sy_kmag;K-band Magnitude;Brightness of the host star as measured using the K (Infrared) band
+sy_gaiamag;Gaia Magnitude;Brightness of the host star as measured by the Gaia mission
